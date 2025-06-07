@@ -40,9 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.tianguisuni.screens.NuevaPublicacionScreen
 import com.example.tianguisuni.ui.theme.TianguisUniTheme
 
 class MainActivity : ComponentActivity() {
@@ -63,127 +65,137 @@ fun UIPrincipal() {
     var selectedNavigationItem by remember { mutableStateOf(0) }
     val categories = listOf("Todo", "Comida", "Bebida", "Ropa", "Dulces", "Regalos", "Otros")
     var selectedCategory by remember { mutableStateOf("Todo") }
+    var mostrarNuevaPublicacion by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            if (selectedNavigationItem == 0) {
-                CenterAlignedTopAppBar(
-                    title = { Text("Tianguis Universitario") },
-                    actions = {
-                        IconButton(onClick = { /* TODO: Implement search */ }) {
-                            Icon(Icons.Filled.Search, contentDescription = "Buscar")
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+    if (mostrarNuevaPublicacion) {
+        NuevaPublicacionScreen(onClose = { mostrarNuevaPublicacion = false })
+    } else {
+        Scaffold(
+            topBar = {
+                if (selectedNavigationItem == 0) {
+                    CenterAlignedTopAppBar(
+                        title = { Text("Tianguis Universitario") },
+                        actions = {
+                            IconButton(onClick = { /* TODO: Implement search */ }) {
+                                Icon(Icons.Filled.Search, contentDescription = "Buscar")
+                            }
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = Color(0xFF669C4A),
+                            titleContentColor = Color.White,
+                            actionIconContentColor = Color.White
+                        )
                     )
-                )
-            } else if (selectedNavigationItem == 1) {
-                TopAppBar(
-                    title = { Text("Mis Publicaciones") },
-                    navigationIcon = {
-                        IconButton(onClick = { selectedNavigationItem = 0 }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                } else if (selectedNavigationItem == 1) {
+                    TopAppBar(
+                        title = { Text("Mis Publicaciones") },
+                        navigationIcon = {
+                            IconButton(onClick = { selectedNavigationItem = 0 }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color(0xFF669C4A),
+                            titleContentColor = Color.White,
+                            navigationIconContentColor = Color.White
+                        )
                     )
-                )
-            }
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedNavigationItem == 0,
-                    onClick = { selectedNavigationItem = 0 },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Inicio") },
-                    label = { Text("Inicio") }
-                )
-                NavigationBarItem(
-                    selected = selectedNavigationItem == 1,
-                    onClick = { selectedNavigationItem = 1 },
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista") },
-                    label = { Text("Lista") }
-                )
-                NavigationBarItem(
-                    selected = selectedNavigationItem == 2,
-                    onClick = { selectedNavigationItem = 2 },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Perfil") },
-                    label = { Text("Perfil") }
-                )
-            }
-        },
-        floatingActionButton = {
-            if (selectedNavigationItem == 1) {
-                FloatingActionButton(
-                    onClick = { /* TODO: Implement add publication */ },
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Agregar publicación")
+                }
+            },
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedNavigationItem == 0,
+                        onClick = { selectedNavigationItem = 0 },
+                        icon = { Icon(Icons.Filled.Home, contentDescription = "Inicio") },
+                        label = { Text("Inicio") }
+                    )
+                    NavigationBarItem(
+                        selected = selectedNavigationItem == 1,
+                        onClick = { selectedNavigationItem = 1 },
+                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista") },
+                        label = { Text("Lista") }
+                    )
+                    NavigationBarItem(
+                        selected = selectedNavigationItem == 2,
+                        onClick = { selectedNavigationItem = 2 },
+                        icon = { Icon(Icons.Filled.Person, contentDescription = "Perfil") },
+                        label = { Text("Perfil") }
+                    )
+                }
+            },
+            floatingActionButton = {
+                if (selectedNavigationItem == 1) {
+                    FloatingActionButton(
+                        onClick = { mostrarNuevaPublicacion = true },
+                        containerColor = Color(0xFF669C4A),
+                        contentColor = Color.White
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Agregar publicación")
+                    }
                 }
             }
-        }
-    ) { paddingValues ->
-        when (selectedNavigationItem) {
-            0 -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Categories Filter
-                    LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
-                    ) {
-                        items(categories) { category ->
-                            FilterChip(
-                                selected = category == selectedCategory,
-                                onClick = { selectedCategory = category },
-                                label = { Text(category) }
-                            )
-                        }
-                    }
-
-                    // Empty State
+        ) { paddingValues ->
+            when (selectedNavigationItem) {
+                0 -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(paddingValues),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Categories Filter
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                        ) {
+                            items(categories) { category ->
+                                FilterChip(
+                                    selected = category == selectedCategory,
+                                    onClick = { selectedCategory = category },
+                                    label = { Text(category) }
+                                )
+                            }
+                        }
+
+                        // Empty State
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "No hay publicaciones",
+                                style = MaterialTheme.typography.titleLarge,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                1 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "No hay publicaciones",
+                            text = "Regístrate para crear publicaciones",
                             style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }
-            }
-            1 -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Regístrate para crear publicaciones",
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                2 -> {
+                    // TODO: Implement Profile Screen
                 }
-            }
-            2 -> {
-                // TODO: Implement Profile Screen
             }
         }
     }
