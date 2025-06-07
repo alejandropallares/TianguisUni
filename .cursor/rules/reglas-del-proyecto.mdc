@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Tianguis Universitario
+
+Estamos desarrollando una app para compartir publicaciones de articulos de venta dentro de una universidad como(dulces, comida,bebidas, ropa, regalos, "otros"), donde cualquier persona (aunque no esté registrada) que descargue la aplicacion pueda ver los articulos que se han publicado y filtrarlos con las categorias que te mencione. Asimismo, una persona puede registrarse con su nombre de usuario y contraseña; un usuario no puede hacer una publicacion hasta que se registre. Para hacer una publicacion es necesario proporcionar los siguientes campos: Nombre del producto, categoria del producto, descripcion del producto, Ubicacion(Solo texto), Precio, liga de red social y boton para agregar Imagen desde la galeria. Las publicaciones deben de poder compartirse por WhatsApp. Esta app debe de tener sincronizacion desde la base de datos local hacia una base de datos remota(MySQL) que se accede a partir de un tunel generado con ngrok que consume un endpoint de un script PHP alojado en un servidor Xampp.
+
+## Pantallas: 
+- Registro de usuario: Formulario con los campos nombre de usuario y contraseña y boton de "Registrar"
+- Pantalla principal: Lista de las publicaciones con barra de filtros y buscador.
+- Añadir publicacion: Formulario con los campos requeridos para una publicación.
+- Inicio de sesion: Formulario con los campos nombre de usuario y contraseña y boton de "Entrar"
+- Detalles de la publicación: Información de la publicacion asi como boton de compartir(a WhatsApp).
+- Preferencias: Sliders para definir el color de los Card de las publicaciones en la pantalla principal y boton de guardar para mantener persistente esta preferencia.
+- Pantalla de mis publicaciones: Lista de los productos que el usuario a creado asi como opciones para editar y eliminar, junto con un boton flotante de "+" en la parte inferior derecha para añadir una nueva publicacion.
+
+
+## Tecnologias 
+
+- Jetpack Compose para diseño de interfaces.
+- Material 3 como sistema de diseño.
+- Kotlin como lenguaje de programacion.
+- Usa StateFlow.
+- Retrofit
+- Room
+
+## Arquitectura 
+- La aplicacion tendra una arquitectura MVVM.
+- La UI en compose.
+
+## Reglas Extra
+- Siempre que generes codigo compilalo para ver que no haya problemas, para ello usa compileDebugKotlin
+- Aunque pienses que los build.gradel.kts están incorrectos, los que tienes ahora en el contexto son validos. Si tienes que modificar el libs.versions o los ficheros gradle, simplemente añade lo nuevo que necesites y no modifiques lo que ya existe.
