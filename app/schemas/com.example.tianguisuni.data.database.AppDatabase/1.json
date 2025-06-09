@@ -1,0 +1,200 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "91ab0485cd15ebb7da95739b1a09366b",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_usr` TEXT NOT NULL, `nombre_usr` TEXT NOT NULL, `nombre_pila` TEXT NOT NULL, `contrasena_usr` TEXT NOT NULL, `fecha_modificacion` INTEGER NOT NULL, `eliminado_estado` INTEGER NOT NULL, `sincronizado` INTEGER NOT NULL, PRIMARY KEY(`id_usr`))",
+        "fields": [
+          {
+            "fieldPath": "id_usr",
+            "columnName": "id_usr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre_usr",
+            "columnName": "nombre_usr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre_pila",
+            "columnName": "nombre_pila",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contrasena_usr",
+            "columnName": "contrasena_usr",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha_modificacion",
+            "columnName": "fecha_modificacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eliminado_estado",
+            "columnName": "eliminado_estado",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sincronizado",
+            "columnName": "sincronizado",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id_usr"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_usuarios_nombre_usr",
+            "unique": true,
+            "columnNames": [
+              "nombre_usr"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_usuarios_nombre_usr` ON `${TABLE_NAME}` (`nombre_usr`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "publicaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uuid` TEXT NOT NULL, `nombre_producto` TEXT NOT NULL, `categoria_producto` TEXT NOT NULL, `descripcion_producto` TEXT NOT NULL, `ubicacion_producto` TEXT NOT NULL, `precio_producto` REAL NOT NULL, `imagen_producto` TEXT NOT NULL, `user_id` TEXT NOT NULL, `fecha_modificacion` INTEGER NOT NULL, `eliminado_estado` INTEGER NOT NULL, `sincronizado` INTEGER NOT NULL, PRIMARY KEY(`uuid`), FOREIGN KEY(`user_id`) REFERENCES `usuarios`(`id_usr`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre_producto",
+            "columnName": "nombre_producto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoria_producto",
+            "columnName": "categoria_producto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion_producto",
+            "columnName": "descripcion_producto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ubicacion_producto",
+            "columnName": "ubicacion_producto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precio_producto",
+            "columnName": "precio_producto",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagen_producto",
+            "columnName": "imagen_producto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha_modificacion",
+            "columnName": "fecha_modificacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eliminado_estado",
+            "columnName": "eliminado_estado",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sincronizado",
+            "columnName": "sincronizado",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uuid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_publicaciones_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publicaciones_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_publicaciones_categoria_producto",
+            "unique": false,
+            "columnNames": [
+              "categoria_producto"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publicaciones_categoria_producto` ON `${TABLE_NAME}` (`categoria_producto`)"
+          },
+          {
+            "name": "index_publicaciones_fecha_modificacion",
+            "unique": false,
+            "columnNames": [
+              "fecha_modificacion"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publicaciones_fecha_modificacion` ON `${TABLE_NAME}` (`fecha_modificacion`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "usuarios",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "user_id"
+            ],
+            "referencedColumns": [
+              "id_usr"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '91ab0485cd15ebb7da95739b1a09366b')"
+    ]
+  }
+}

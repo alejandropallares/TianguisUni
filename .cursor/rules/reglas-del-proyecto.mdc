@@ -26,6 +26,9 @@ Estamos desarrollando una app para compartir publicaciones de articulos de venta
 - Retrofit
 - Room
 
+## Sincronizacion de datos
+-  Para implementar la conexión entre esta aplicacion y una base de datos MySQL remota sera mediante un script PHP con phpMyAdmin en otra computadora, la app sincronizará datos entre SQLite (local) y MySQL (remota) usando Retrofit y Room 
+
 ## Arquitectura 
 - La aplicacion tendra una arquitectura MVVM.
 - La UI en compose.
