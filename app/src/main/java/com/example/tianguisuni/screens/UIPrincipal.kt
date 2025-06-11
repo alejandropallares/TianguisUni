@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -30,7 +30,8 @@ fun UIPrincipal() {
         }
         showRegistro -> {
             RegistroScreen(
-                onNavigateBack = { showRegistro = false }
+                onNavigateBack = { showRegistro = false },
+                onRegistroExitoso = { showRegistro = false }
             )
         }
         else -> {
@@ -44,7 +45,7 @@ fun UIPrincipal() {
                             onClick = { selectedTab = 0 }
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Mis Publicaciones") },
+                            icon = { Icon(Icons.Default.List, contentDescription = "Mis Publicaciones") },
                             label = { Text("Mis Publicaciones") },
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 }

@@ -10,7 +10,7 @@ import retrofit2.http.*
 
 interface ApiService {
     @POST("api.php/login")
-    suspend fun login(@Body credentials: LoginRequest): LoginResponse
+    suspend fun login(@Body credentials: LoginRequest): Response<LoginResponse>
 
     @POST("api.php/register")
     suspend fun register(@Body usuario: Usuario): Response<Unit>

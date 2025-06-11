@@ -68,4 +68,19 @@ interface UsuarioDao {
      */
     @Query("SELECT * FROM usuarios WHERE eliminado_estado = 0")
     fun getAllUsuarios(): Flow<List<Usuario>>
+
+    @Query("SELECT * FROM usuarios WHERE id_usr = :id AND eliminado_estado = 0")
+    suspend fun getUsuario(id: String): Usuario?
+
+    @Query("SELECT * FROM usuarios WHERE nombre_usr = :username AND eliminado_estado = 0")
+    suspend fun getUsuarioByUsername(username: String): Usuario?
+
+    @Delete
+    suspend fun deleteUsuario(usuario: Usuario)
+
+    @Query("DELETE FROM usuarios")
+    suspend fun deleteAllUsuarios()
+
+    @Query("SELECT * FROM usuarios WHERE nombre_usr = :username AND contrasena_usr = :password AND eliminado_estado = 0")
+    suspend fun login(username: String, password: String): Usuario?
 } 

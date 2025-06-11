@@ -9,16 +9,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tianguisuni.data.entities.Usuario
+import com.example.tianguisuni.viewmodel.AuthViewModel
+import com.example.tianguisuni.viewmodel.AuthViewModelFactory
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onRegistroExitoso: () -> Unit,
+    authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory.provideFactory(
+            context = androidx.compose.ui.platform.LocalContext.current
+        )
+    )
 ) {
     var username by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -28,6 +38,20 @@ fun RegistroScreen(
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessages by remember { mutableStateOf(listOf<String>()) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Observar el resultado del registro
+    LaunchedEffect(Unit) {
+        authViewModel.registerResult.collect { result ->
+            isLoading = false
+            result.onSuccess {
+                onRegistroExitoso()
+            }.onFailure { exception ->
+                errorMessages = listOf(exception.message ?: "Error al registrar usuario")
+                showErrorDialog = true
+            }
+        }
+    }
 
     // Validaciones
     val isUsernameValid = username.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))
@@ -35,36 +59,25 @@ fun RegistroScreen(
     val isPasswordValid = password.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).{8,}$"))
     val doPasswordsMatch = password == confirmPassword
 
-    // Mensajes de error para cada campo
-    val usernameError = if (username.isNotEmpty() && !isUsernameValid) {
-        "El nombre de usuario debe tener máximo 20 caracteres, sin espacios y solo puede contener letras, números, punto y guion bajo"
-    } else null
-
-    val nameError = if (name.isNotEmpty() && !isNameValid) {
-        "El nombre debe tener máximo 20 caracteres y solo puede contener letras"
-    } else null
-
-    val passwordError = if (password.isNotEmpty() && !isPasswordValid) {
-        "La contraseña debe tener mínimo 8 caracteres, 1 mayúscula y 1 número"
-    } else null
-
-    val confirmPasswordError = if (confirmPassword.isNotEmpty() && !doPasswordsMatch) {
-        "Las contraseñas no coinciden"
-    } else null
-
     fun validateForm(): Boolean {
         val errors = mutableListOf<String>()
         
         if (username.isEmpty()) {
             errors.add("El nombre de usuario no puede estar vacío")
+        } else if (!isUsernameValid) {
+            errors.add("El nombre de usuario debe tener máximo 20 caracteres, sin espacios y solo puede contener letras, números, punto y guion bajo")
         }
         
         if (name.isEmpty()) {
             errors.add("El nombre no puede estar vacío")
+        } else if (!isNameValid) {
+            errors.add("El nombre debe tener máximo 20 caracteres y solo puede contener letras")
         }
         
         if (password.isEmpty()) {
             errors.add("La contraseña no puede estar vacía")
+        } else if (!isPasswordValid) {
+            errors.add("La contraseña debe tener mínimo 8 caracteres, 1 mayúscula y 1 número")
         }
         
         if (confirmPassword.isEmpty() || !doPasswordsMatch) {
@@ -73,6 +86,21 @@ fun RegistroScreen(
 
         errorMessages = errors
         return errors.isEmpty()
+    }
+
+    fun handleRegistro() {
+        if (validateForm()) {
+            isLoading = true
+            val nuevoUsuario = Usuario(
+                id_usr = UUID.randomUUID().toString(),
+                nombre_usr = username,
+                nombre_pila = name,
+                contrasena_usr = password
+            )
+            authViewModel.register(nuevoUsuario)
+        } else {
+            showErrorDialog = true
+        }
     }
 
     if (showErrorDialog && errorMessages.isNotEmpty()) {
@@ -145,14 +173,14 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { newValue ->
-                        // Solo permite letras, números, punto y guion bajo, máximo 20 caracteres
                         if (newValue.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))) {
                             username = newValue
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe un nombre de usuario original") },
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !isLoading
                 )
             }
 
@@ -166,14 +194,14 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { newValue ->
-                        // Solo permite letras, máximo 20 caracteres
                         if (newValue.matches(Regex("^[a-zA-Z]{0,20}$"))) {
                             name = newValue
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe tu nombre de pila") },
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !isLoading
                 )
             }
 
@@ -192,15 +220,13 @@ fun RegistroScreen(
                 )
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { newValue ->
-                        // No hay restricción de caracteres para la contraseña
-                        password = newValue
-                    },
+                    onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe tu contraseña") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
+                    enabled = !isLoading,
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
@@ -222,15 +248,13 @@ fun RegistroScreen(
                 )
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { newValue ->
-                        // No hay restricción de caracteres para la confirmación de contraseña
-                        confirmPassword = newValue
-                    },
+                    onValueChange = { confirmPassword = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Escribe tu contraseña") },
+                    placeholder = { Text("Confirma tu contraseña") },
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
+                    enabled = !isLoading,
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
@@ -245,24 +269,18 @@ fun RegistroScreen(
 
             // Botón de Registrar
             Button(
-                onClick = {
-                    if (!validateForm()) {
-                        showErrorDialog = true
-                    } else {
-                        // TODO: Implementar registro
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE8F5E9)
-                )
+                onClick = { handleRegistro() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Registrar",
-                    color = Color.Black
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Registrar")
+                }
             }
         }
     }
