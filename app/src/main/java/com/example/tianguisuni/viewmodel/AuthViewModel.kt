@@ -10,9 +10,17 @@ import com.example.tianguisuni.data.network.models.LoginRequest
 import com.example.tianguisuni.data.network.models.LoginResponse
 import com.example.tianguisuni.data.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
+
+data class SessionState(
+    val isLoggedIn: Boolean = false,
+    val currentUser: String? = null
+)
 
 class AuthViewModel(
     databaseProvider: DatabaseProvider,
@@ -25,6 +33,9 @@ class AuthViewModel(
 
     private val _loginResult = MutableSharedFlow<Result<LoginResponse>>()
     val loginResult: SharedFlow<Result<LoginResponse>> = _loginResult
+
+    private val _sessionState = MutableStateFlow(SessionState())
+    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
     fun register(usuario: Usuario) {
         viewModelScope.launch {
@@ -61,6 +72,7 @@ class AuthViewModel(
                             contrasena_usr = password
                         )
                         usuarioRepository.insertUsuario(usuario)
+                        _sessionState.value = SessionState(isLoggedIn = true, currentUser = username)
                         _loginResult.emit(Result.success(loginResponse))
                     } else {
                         _loginResult.emit(Result.failure(Exception(loginResponse.error ?: "Error desconocido al iniciar sesión")))
@@ -78,6 +90,7 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 usuarioRepository.deleteAllUsuarios()
+                _sessionState.value = SessionState()
             } catch (e: Exception) {
                 // Manejar error de logout si es necesario
             }

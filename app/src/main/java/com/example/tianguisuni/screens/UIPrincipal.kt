@@ -72,7 +72,6 @@ fun UIPrincipal() {
                             onNavigateToNuevaPublicacion = { showNuevaPublicacion = true }
                         )
                         2 -> PerfilScreen(
-                            onLoginClick = { /* TODO: Implementar login */ },
                             onNavigateToRegister = { showRegistro = true }
                         )
                     }
