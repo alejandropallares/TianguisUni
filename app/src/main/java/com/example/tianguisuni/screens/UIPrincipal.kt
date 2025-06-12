@@ -23,10 +23,9 @@ fun UIPrincipal() {
     val newPublicationViewModel: NewPublicationViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
     
-    val currentUserId = authViewModel.getCurrentUserId()
-
     when {
         showNuevaPublicacion -> {
+            val currentUserId = authViewModel.getCurrentUserId()
             if (currentUserId != null) {
                 NuevaPublicacionScreen(
                     viewModel = newPublicationViewModel,
@@ -34,7 +33,6 @@ fun UIPrincipal() {
                     onClose = { showNuevaPublicacion = false }
                 )
             } else {
-                // Si no hay usuario logueado, mostrar pantalla de registro
                 showRegistro = true
                 showNuevaPublicacion = false
             }
@@ -42,7 +40,12 @@ fun UIPrincipal() {
         showRegistro -> {
             RegistroScreen(
                 onNavigateBack = { showRegistro = false },
-                onRegistroExitoso = { showRegistro = false }
+                onRegistroExitoso = {
+                    showRegistro = false
+                    if (authViewModel.getCurrentUserId() != null) {
+                        showNuevaPublicacion = true
+                    }
+                }
             )
         }
         else -> {
@@ -78,6 +81,7 @@ fun UIPrincipal() {
                     when (selectedTab) {
                         0 -> HomeScreen(
                             onNavigateToNuevaPublicacion = { 
+                                val currentUserId = authViewModel.getCurrentUserId()
                                 if (currentUserId != null) {
                                     showNuevaPublicacion = true
                                 } else {
@@ -87,6 +91,7 @@ fun UIPrincipal() {
                         )
                         1 -> MisPublicacionesScreen(
                             onNavigateToNuevaPublicacion = { 
+                                val currentUserId = authViewModel.getCurrentUserId()
                                 if (currentUserId != null) {
                                     showNuevaPublicacion = true
                                 } else {

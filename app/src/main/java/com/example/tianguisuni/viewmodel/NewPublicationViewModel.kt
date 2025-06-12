@@ -81,15 +81,10 @@ class NewPublicationViewModel : ViewModel() {
     }
 
     fun updatePrice(price: String) {
-        val regex = Regex("^\\d*\\.?\\d{0,2}$")
-        if (price.isEmpty() || regex.matches(price)) {
+        if (price.isEmpty() || price.matches(Regex("^\\d*\\.?\\d*$"))) {
             _formState.value = _formState.value.copy(
                 price = price,
                 priceError = null
-            )
-        } else {
-            _formState.value = _formState.value.copy(
-                priceError = "Formato inválido. Ejemplo: 99.99"
             )
         }
     }
@@ -99,6 +94,11 @@ class NewPublicationViewModel : ViewModel() {
             imageUri = uri?.toString(),
             imageError = null
         )
+    }
+
+    fun resetForm() {
+        _formState.value = NewPublicationFormState()
+        _state.value = NewPublicationState.Initial
     }
 
     private fun validateForm(): Boolean {
@@ -213,10 +213,5 @@ class NewPublicationViewModel : ViewModel() {
                 }
             }
         }
-    }
-
-    fun resetState() {
-        _state.value = NewPublicationState.Initial
-        _formState.value = NewPublicationFormState()
     }
 } 

@@ -76,29 +76,44 @@ fun NuevaPublicacionScreen(
         }
     }
 
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { 
-                showDialog = false
-                if (!isError) {
-                    onClose()
-                }
-            },
-            title = { Text(if (isError) "Error" else "Éxito") },
-            text = { Text(dialogMessage) },
-            confirmButton = {
-                TextButton(
-                    onClick = { 
-                        showDialog = false
-                        if (!isError) {
-                            onClose()
+    when (val currentState = state) {
+        is NewPublicationState.Success -> {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.resetForm()
+                },
+                title = { Text("Éxito") },
+                text = { Text("¡Publicación creada con éxito!") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.resetForm()
                         }
+                    ) {
+                        Text("Aceptar")
                     }
-                ) {
-                    Text("Aceptar")
                 }
-            }
-        )
+            )
+        }
+        is NewPublicationState.Error -> {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.resetForm()
+                },
+                title = { Text("Error") },
+                text = { Text(currentState.message) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.resetForm()
+                        }
+                    ) {
+                        Text("Aceptar")
+                    }
+                }
+            )
+        }
+        else -> {}
     }
 
     val imagePicker = rememberLauncherForActivityResult(
