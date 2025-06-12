@@ -1,7 +1,6 @@
 package com.example.tianguisuni.data.entities
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -22,17 +21,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(
     tableName = "publicaciones",
-    foreignKeys = [
-        ForeignKey(
-            entity = Usuario::class,
-            parentColumns = ["id_usr"],
-            childColumns = ["user_id"],
-            onDelete = ForeignKey.CASCADE,
-            onUpdate = ForeignKey.CASCADE
-        )
-    ],
     indices = [
-        Index(value = ["user_id"]),
         Index(value = ["categoria_producto"]),
         Index(value = ["fecha_modificacion"])
     ]

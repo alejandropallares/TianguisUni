@@ -1,24 +1,38 @@
 package com.example.tianguisuni.viewmodel
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.tianguisuni.model.Publication
+import com.example.tianguisuni.data.database.DatabaseProvider
+import com.example.tianguisuni.data.entities.Publicacion
+import com.example.tianguisuni.data.entities.Usuario
+import com.example.tianguisuni.data.network.RetrofitClient
 import com.example.tianguisuni.ui.state.NewPublicationFormState
 import com.example.tianguisuni.ui.state.NewPublicationState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.util.Locale
+import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 class NewPublicationViewModel : ViewModel() {
+    private val api = RetrofitClient.apiService
+    private var databaseProvider: DatabaseProvider? = null
+    
     private val _state = MutableStateFlow<NewPublicationState>(NewPublicationState.Initial)
     val state: StateFlow<NewPublicationState> = _state.asStateFlow()
 
     private val _formState = MutableStateFlow(NewPublicationFormState())
     val formState: StateFlow<NewPublicationFormState> = _formState.asStateFlow()
+
+    fun initialize(context: Context) {
+        databaseProvider = DatabaseProvider.getInstance(context)
+    }
 
     fun updateName(name: String) {
         if (name.length <= 30) {
@@ -87,7 +101,7 @@ class NewPublicationViewModel : ViewModel() {
         )
     }
 
-    fun validateForm(): Boolean {
+    private fun validateForm(): Boolean {
         var isValid = true
         val currentState = _formState.value
 
@@ -124,7 +138,16 @@ class NewPublicationViewModel : ViewModel() {
         return isValid
     }
 
-    fun createPublication() {
+    private suspend fun convertImageToBase64(context: Context, uri: Uri): String {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        val byteArray = outputStream.toByteArray()
+        return Base64.encodeToString(byteArray, Base64.DEFAULT)
+    }
+
+    fun createPublication(context: Context, userId: String) {
         if (!validateForm()) return
 
         viewModelScope.launch {
@@ -132,21 +155,62 @@ class NewPublicationViewModel : ViewModel() {
                 _state.value = NewPublicationState.Loading
                 
                 val formState = _formState.value
-                val publication = Publication(
-                    name = formState.name,
-                    category = formState.category,
-                    description = formState.description,
-                    location = formState.location,
-                    price = formState.price.toDoubleOrNull() ?: 0.0,
-                    imageUri = formState.imageUri?.let { Uri.parse(it) },
-                    userId = "TODO" // TODO: Obtener el ID del usuario actual
+                val imageBase64 = formState.imageUri?.let { 
+                    convertImageToBase64(context, Uri.parse(it))
+                } ?: throw IllegalStateException("Image URI is null")
+
+                val publicacion = Publicacion(
+                    uuid = UUID.randomUUID().toString(),
+                    nombre_producto = formState.name,
+                    categoria_producto = formState.category,
+                    descripcion_producto = formState.description,
+                    ubicacion_producto = formState.location,
+                    precio_producto = formState.price.toDoubleOrNull() ?: 0.0,
+                    imagen_producto = imageBase64,
+                    user_id = userId,
+                    fecha_modificacion = System.currentTimeMillis(),
+                    eliminado_estado = false,
+                    sincronizado = false
                 )
 
-                // TODO: Guardar la publicación en la base de datos
-                
-                _state.value = NewPublicationState.Success
+                // Primero intentamos enviar al servidor
+                val response = api.createPublicacion(publicacion)
+                if (response.isSuccessful) {
+                    // Si el servidor acepta la publicación, la guardamos localmente
+                    databaseProvider?.publicacionDao?.insertPublicacion(publicacion.copy(sincronizado = true))
+                    _state.value = NewPublicationState.Success
+                } else {
+                    // Si hay error en el servidor, guardamos localmente pero marcada como no sincronizada
+                    databaseProvider?.publicacionDao?.insertPublicacion(publicacion)
+                    _state.value = NewPublicationState.Error("Error al crear la publicación en el servidor. Se guardó localmente y se sincronizará más tarde.")
+                }
             } catch (e: Exception) {
-                _state.value = NewPublicationState.Error(e.message ?: "Error al crear la publicación")
+                // En caso de error de red, guardamos localmente
+                try {
+                    val formState = _formState.value
+                    val imageBase64 = formState.imageUri?.let { 
+                        convertImageToBase64(context, Uri.parse(it))
+                    } ?: throw IllegalStateException("Image URI is null")
+
+                    val publicacion = Publicacion(
+                        uuid = UUID.randomUUID().toString(),
+                        nombre_producto = formState.name,
+                        categoria_producto = formState.category,
+                        descripcion_producto = formState.description,
+                        ubicacion_producto = formState.location,
+                        precio_producto = formState.price.toDoubleOrNull() ?: 0.0,
+                        imagen_producto = imageBase64,
+                        user_id = userId,
+                        fecha_modificacion = System.currentTimeMillis(),
+                        eliminado_estado = false,
+                        sincronizado = false
+                    )
+                    
+                    databaseProvider?.publicacionDao?.insertPublicacion(publicacion)
+                    _state.value = NewPublicationState.Error("Error de conexión. La publicación se guardó localmente y se sincronizará cuando haya conexión.")
+                } catch (e: Exception) {
+                    _state.value = NewPublicationState.Error("Error al crear la publicación: ${e.message}")
+                }
             }
         }
     }

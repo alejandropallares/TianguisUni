@@ -1,56 +1,61 @@
 package com.example.tianguisuni.viewmodel
 
+import android.content.Context
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tianguisuni.data.database.DatabaseProvider
 import com.example.tianguisuni.data.entities.Usuario
-import com.example.tianguisuni.data.network.ApiService
 import com.example.tianguisuni.data.network.RetrofitClient
 import com.example.tianguisuni.data.network.models.LoginRequest
 import com.example.tianguisuni.data.network.models.LoginResponse
-import com.example.tianguisuni.data.repository.UsuarioRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import retrofit2.Response
+import java.util.UUID
 
-data class SessionState(
-    val isLoggedIn: Boolean = false,
-    val currentUser: String? = null
-)
+class AuthViewModel : ViewModel() {
+    private val api = RetrofitClient.apiService
+    private var databaseProvider: DatabaseProvider? = null
+    
+    private val _loginResult = MutableLiveData<Result<LoginResponse>>()
+    val loginResult: LiveData<Result<LoginResponse>> = _loginResult
 
-class AuthViewModel(
-    databaseProvider: DatabaseProvider,
-    private val usuarioRepository: UsuarioRepository = UsuarioRepository(databaseProvider),
-    private val apiService: ApiService = RetrofitClient.apiService
-) : ViewModel() {
+    private val _registerResult = MutableLiveData<Result<Unit>>()
+    val registerResult: LiveData<Result<Unit>> = _registerResult
 
-    private val _registerResult = MutableSharedFlow<Result<Unit>>()
-    val registerResult: SharedFlow<Result<Unit>> = _registerResult
+    private var currentUserId: String? = null
 
-    private val _loginResult = MutableSharedFlow<Result<LoginResponse>>()
-    val loginResult: SharedFlow<Result<LoginResponse>> = _loginResult
+    fun initialize(context: Context) {
+        databaseProvider = DatabaseProvider.getInstance(context)
+    }
 
-    private val _sessionState = MutableStateFlow(SessionState())
-    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
-
-    fun register(usuario: Usuario) {
+    fun register(nombre: String, nombrePila: String, password: String) {
         viewModelScope.launch {
             try {
-                // Primero intentamos registrar en el servidor
-                val response = apiService.register(usuario)
+                val userId = UUID.randomUUID().toString()
+                val usuario = Usuario(
+                    id_usr = userId,
+                    nombre_usr = nombre,
+                    nombre_pila = nombrePila,
+                    contrasena_usr = password,
+                    fecha_modificacion = System.currentTimeMillis(),
+                    eliminado_estado = false,
+                    sincronizado = false
+                )
+
+                // Guardar en la base de datos local
+                databaseProvider?.usuarioDao?.insertUsuario(usuario)
+
+                // Enviar al servidor
+                val response = api.register(usuario)
                 if (response.isSuccessful) {
-                    // Si el registro en el servidor es exitoso, guardamos localmente
-                    usuarioRepository.insertUsuario(usuario)
-                    _registerResult.emit(Result.success(Unit))
+                    currentUserId = userId
+                    _registerResult.value = Result.success(Unit)
                 } else {
-                    _registerResult.emit(Result.failure(Exception("Error al registrar: ${response.message()}")))
+                    _registerResult.value = Result.failure(Exception("Error al registrar usuario"))
                 }
             } catch (e: Exception) {
-                _registerResult.emit(Result.failure(e))
+                _registerResult.value = Result.failure(e)
             }
         }
     }
@@ -58,42 +63,22 @@ class AuthViewModel(
     fun login(username: String, password: String) {
         viewModelScope.launch {
             try {
-                val loginRequest = LoginRequest(username, password)
-                val response = apiService.login(loginRequest)
-                
+                val response = api.login(LoginRequest(username, password))
                 if (response.isSuccessful && response.body() != null) {
-                    val loginResponse = response.body()!!
-                    if (loginResponse.success && loginResponse.userId != null) {
-                        // Obtenemos el usuario de la base de datos local o creamos uno nuevo
-                        val usuario = Usuario(
-                            id_usr = loginResponse.userId,
-                            nombre_usr = username,
-                            nombre_pila = "", // Se actualizará después con los datos completos
-                            contrasena_usr = password
-                        )
-                        usuarioRepository.insertUsuario(usuario)
-                        _sessionState.value = SessionState(isLoggedIn = true, currentUser = username)
-                        _loginResult.emit(Result.success(loginResponse))
-                    } else {
-                        _loginResult.emit(Result.failure(Exception(loginResponse.error ?: "Error desconocido al iniciar sesión")))
-                    }
+                    currentUserId = response.body()?.userId
+                    _loginResult.value = Result.success(response.body()!!)
                 } else {
-                    _loginResult.emit(Result.failure(Exception("Error al iniciar sesión: ${response.message()}")))
+                    _loginResult.value = Result.failure(Exception("Error al iniciar sesión"))
                 }
             } catch (e: Exception) {
-                _loginResult.emit(Result.failure(e))
+                _loginResult.value = Result.failure(e)
             }
         }
     }
 
+    fun getCurrentUserId(): String? = currentUserId
+
     fun logout() {
-        viewModelScope.launch {
-            try {
-                usuarioRepository.deleteAllUsuarios()
-                _sessionState.value = SessionState()
-            } catch (e: Exception) {
-                // Manejar error de logout si es necesario
-            }
-        }
+        currentUserId = null
     }
 } 

@@ -21,6 +21,11 @@ android {
             useSupportLibrary = true
         }
 
+        // Room schema location
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+
         // Room schema
         kapt {
             arguments {
@@ -73,6 +78,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.1")
     
     // Room dependencies
     implementation(libs.androidx.room.runtime)

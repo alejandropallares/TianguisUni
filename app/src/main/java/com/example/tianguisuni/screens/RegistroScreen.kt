@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.data.entities.Usuario
 import com.example.tianguisuni.viewmodel.AuthViewModel
@@ -40,9 +41,11 @@ fun RegistroScreen(
     var errorMessages by remember { mutableStateOf(listOf<String>()) }
     var isLoading by remember { mutableStateOf(false) }
 
+    val registerResult by authViewModel.registerResult.observeAsState()
+
     // Observar el resultado del registro
-    LaunchedEffect(Unit) {
-        authViewModel.registerResult.collect { result ->
+    LaunchedEffect(registerResult) {
+        registerResult?.let { result ->
             isLoading = false
             result.onSuccess {
                 onRegistroExitoso()
@@ -91,13 +94,11 @@ fun RegistroScreen(
     fun handleRegistro() {
         if (validateForm()) {
             isLoading = true
-            val nuevoUsuario = Usuario(
-                id_usr = UUID.randomUUID().toString(),
-                nombre_usr = username,
-                nombre_pila = name,
-                contrasena_usr = password
+            authViewModel.register(
+                nombre = username,
+                nombrePila = name,
+                password = password
             )
-            authViewModel.register(nuevoUsuario)
         } else {
             showErrorDialog = true
         }

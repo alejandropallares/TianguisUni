@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.tianguisuni.data.database.DatabaseProvider
 
 class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(
@@ -14,9 +13,9 @@ class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Fac
     ): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthViewModel(
-                databaseProvider = DatabaseProvider.getInstance(context)
-            ) as T
+            val viewModel = AuthViewModel()
+            viewModel.initialize(context)
+            return viewModel as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

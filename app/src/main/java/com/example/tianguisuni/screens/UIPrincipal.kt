@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.NewPublicationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -20,13 +21,23 @@ fun UIPrincipal() {
     var showNuevaPublicacion by remember { mutableStateOf(false) }
     var showRegistro by remember { mutableStateOf(false) }
     val newPublicationViewModel: NewPublicationViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel()
+    
+    val currentUserId = authViewModel.getCurrentUserId()
 
     when {
         showNuevaPublicacion -> {
-            NuevaPublicacionScreen(
-                viewModel = newPublicationViewModel,
-                onClose = { showNuevaPublicacion = false }
-            )
+            if (currentUserId != null) {
+                NuevaPublicacionScreen(
+                    viewModel = newPublicationViewModel,
+                    userId = currentUserId,
+                    onClose = { showNuevaPublicacion = false }
+                )
+            } else {
+                // Si no hay usuario logueado, mostrar pantalla de registro
+                showRegistro = true
+                showNuevaPublicacion = false
+            }
         }
         showRegistro -> {
             RegistroScreen(
@@ -66,10 +77,22 @@ fun UIPrincipal() {
                 ) {
                     when (selectedTab) {
                         0 -> HomeScreen(
-                            onNavigateToNuevaPublicacion = { showNuevaPublicacion = true }
+                            onNavigateToNuevaPublicacion = { 
+                                if (currentUserId != null) {
+                                    showNuevaPublicacion = true
+                                } else {
+                                    showRegistro = true
+                                }
+                            }
                         )
                         1 -> MisPublicacionesScreen(
-                            onNavigateToNuevaPublicacion = { showNuevaPublicacion = true }
+                            onNavigateToNuevaPublicacion = { 
+                                if (currentUserId != null) {
+                                    showNuevaPublicacion = true
+                                } else {
+                                    showRegistro = true
+                                }
+                            }
                         )
                         2 -> PerfilScreen(
                             onNavigateToRegister = { showRegistro = true }

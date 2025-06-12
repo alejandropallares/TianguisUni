@@ -17,6 +17,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.AuthViewModelFactory
@@ -39,11 +41,14 @@ fun PerfilScreen(
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     
-    val sessionState by authViewModel.sessionState.collectAsState()
+    val currentUserId = authViewModel.getCurrentUserId()
+    val isLoggedIn = currentUserId != null
+    
+    val loginResult by authViewModel.loginResult.observeAsState()
 
     // Observar el resultado del login
-    LaunchedEffect(Unit) {
-        authViewModel.loginResult.collect { result ->
+    LaunchedEffect(loginResult) {
+        loginResult?.let { result ->
             isLoading = false
             result.onSuccess { response ->
                 errorMessage = "Inicio de sesión exitoso"
@@ -55,7 +60,7 @@ fun PerfilScreen(
         }
     }
 
-    if (sessionState.isLoggedIn) {
+    if (isLoggedIn) {
         // Pantalla de perfil del usuario
         Column(
             modifier = Modifier
@@ -97,7 +102,7 @@ fun PerfilScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = sessionState.currentUser ?: "",
+                    text = username,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -144,33 +149,18 @@ fun PerfilScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Encabezado con título y botón de cerrar
-            Row(
+            // Título
+            Text(
+                text = "Iniciar Sesión",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(vertical = 32.dp)
+            )
+
+            // Campos de inicio de sesión
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* TODO: Implementar navegación hacia atrás */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cerrar",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Text(
-                    text = "Inicio de Sesión",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                // Espaciador para mantener el título centrado
-                Spacer(modifier = Modifier.width(48.dp))
-            }
-
-            // Formulario
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 32.dp)
             ) {
                 Text(
                     text = "Nombre de usuario",
@@ -200,24 +190,17 @@ fun PerfilScreen(
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    isError = password.isNotEmpty() && password.length < 8,
                     singleLine = true,
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                                tint = MaterialTheme.colorScheme.onSurface
+                                imageVector = if (passwordVisible) Icons.Default.Close else Icons.Default.Info,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
                             )
                         }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (password.isNotEmpty() && password.length < 8) Color.Red else MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = if (password.isNotEmpty() && password.length < 8) Color.Red else MaterialTheme.colorScheme.outline
-                    )
+                    }
                 )
 
-                // Botón de Entrar
                 Button(
                     onClick = { 
                         if (username.isEmpty() || password.isEmpty()) {
@@ -264,18 +247,14 @@ fun PerfilScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "¿No tienes una cuenta? ",
+                        text = "¿No tienes cuenta? ",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     TextButton(
                         onClick = onNavigateToRegister,
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text(
-                            text = "Regístrate",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Text("Regístrate")
                     }
                 }
             }

@@ -31,6 +31,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @Composable
 fun NuevaPublicacionScreen(
     viewModel: NewPublicationViewModel,
+    userId: String,
     onClose: () -> Unit
 ) {
     val systemUiController = rememberSystemUiController()
@@ -41,6 +42,11 @@ fun NuevaPublicacionScreen(
     val state by viewModel.state.collectAsState()
     val formState by viewModel.formState.collectAsState()
     
+    // Inicializar ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
+    
     // Configurar colores de la barra de estado y navegación
     SideEffect {
         systemUiController.setSystemBarsColor(
@@ -50,17 +56,49 @@ fun NuevaPublicacionScreen(
     }
 
     // Efecto para manejar el estado de la publicación
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
     LaunchedEffect(state) {
         when (state) {
             is NewPublicationState.Success -> {
-                // TODO: Mostrar mensaje de éxito
-                onClose()
+                dialogMessage = "¡Publicación creada con éxito!"
+                isError = false
+                showDialog = true
             }
             is NewPublicationState.Error -> {
-                // TODO: Mostrar mensaje de error
+                dialogMessage = (state as NewPublicationState.Error).message
+                isError = true
+                showDialog = true
             }
             else -> {}
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showDialog = false
+                if (!isError) {
+                    onClose()
+                }
+            },
+            title = { Text(if (isError) "Error" else "Éxito") },
+            text = { Text(dialogMessage) },
+            confirmButton = {
+                TextButton(
+                    onClick = { 
+                        showDialog = false
+                        if (!isError) {
+                            onClose()
+                        }
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            }
+        )
     }
 
     val imagePicker = rememberLauncherForActivityResult(
@@ -104,232 +142,242 @@ fun NuevaPublicacionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
-                .padding(bottom = 80.dp)
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(
-                        WindowInsetsSides.Bottom
-                    )
-                )
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Nombre del producto
+            Text(
+                text = "Nombre del producto",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            OutlinedTextField(
+                value = formState.name,
+                onValueChange = viewModel::updateName,
+                placeholder = { Text("máximo 30 caracteres") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = greenColor,
+                    errorBorderColor = Color.Red
+                ),
+                isError = formState.nameError != null,
+                supportingText = { 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        formState.nameError?.let { Text(it, color = Color.Red) }
+                        Text("${formState.name.length}/30", 
+                            color = if (formState.name.length > 30) Color.Red else Color.Gray)
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Categoría
+            Text(
+                text = "Categoría",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            val categories = listOf("Comida", "Bebida", "Ropa", "Dulces", "Regalos", "Otros")
+            var expandedCategory by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expandedCategory,
+                onExpandedChange = { expandedCategory = it }
             ) {
-                // Nombre del producto
-                Text(
-                    text = "Nombre del producto",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
                 OutlinedTextField(
-                    value = formState.name,
-                    onValueChange = viewModel::updateName,
-                    placeholder = { Text("Escribe el nombre de tu producto") },
-                    modifier = Modifier.fillMaxWidth(),
+                    value = formState.category,
+                    onValueChange = {},
+                    readOnly = true,
+                    placeholder = { Text("Selecciona una categoría") },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color.LightGray,
                         focusedBorderColor = greenColor,
                         errorBorderColor = Color.Red
                     ),
-                    singleLine = true,
-                    isError = formState.nameError != null,
-                    supportingText = { formState.nameError?.let { Text(it, color = Color.Red) } }
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
+                    isError = formState.categoryError != null,
+                    supportingText = { formState.categoryError?.let { Text(it, color = Color.Red) } }
                 )
-
-                // Categoría
-                Text(
-                    text = "Categoria",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                var expandidoCategoria by remember { mutableStateOf(false) }
-                val categorias = listOf("Dulces", "Comida", "Bebidas", "Ropa", "Regalos", "Otros")
-                
-                ExposedDropdownMenuBox(
-                    expanded = expandidoCategoria,
-                    onExpandedChange = { expandidoCategoria = it }
+                ExposedDropdownMenu(
+                    expanded = expandedCategory,
+                    onDismissRequest = { expandedCategory = false }
                 ) {
-                    OutlinedTextField(
-                        value = formState.category,
-                        onValueChange = {},
-                        readOnly = true,
-                        placeholder = { Text("Selecciona categoria") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = greenColor,
-                            errorBorderColor = Color.Red
-                        ),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoCategoria) },
-                        isError = formState.categoryError != null,
-                        supportingText = { formState.categoryError?.let { Text(it, color = Color.Red) } }
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandidoCategoria,
-                        onDismissRequest = { expandidoCategoria = false }
-                    ) {
-                        categorias.forEach { categoria ->
-                            DropdownMenuItem(
-                                text = { Text(categoria) },
-                                onClick = {
-                                    viewModel.updateCategory(categoria)
-                                    expandidoCategoria = false
-                                }
-                            )
-                        }
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category) },
+                            onClick = { 
+                                viewModel.updateCategory(category)
+                                expandedCategory = false
+                            }
+                        )
                     }
                 }
+            }
 
-                // Descripción del producto
-                Text(
-                    text = "Descripción del producto",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                OutlinedTextField(
-                    value = formState.description,
-                    onValueChange = viewModel::updateDescription,
-                    placeholder = { Text("maximo 200 caracteres") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedBorderColor = greenColor,
-                        errorBorderColor = Color.Red
-                    ),
-                    isError = formState.descriptionError != null,
-                    supportingText = { 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            formState.descriptionError?.let { Text(it, color = Color.Red) }
-                            Text("${formState.description.length}/200", 
-                                color = if (formState.description.length > 200) Color.Red else Color.Gray)
-                        }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Descripción
+            Text(
+                text = "Descripción del producto",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            OutlinedTextField(
+                value = formState.description,
+                onValueChange = viewModel::updateDescription,
+                placeholder = { Text("maximo 200 caracteres") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = greenColor,
+                    errorBorderColor = Color.Red
+                ),
+                isError = formState.descriptionError != null,
+                supportingText = { 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        formState.descriptionError?.let { Text(it, color = Color.Red) }
+                        Text("${formState.description.length}/200", 
+                            color = if (formState.description.length > 200) Color.Red else Color.Gray)
                     }
-                )
+                }
+            )
 
-                // Ubicación
-                Text(
-                    text = "Ubicación",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                OutlinedTextField(
-                    value = formState.location,
-                    onValueChange = viewModel::updateLocation,
-                    placeholder = { Text("Lugar dentro del campus") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedBorderColor = greenColor,
-                        errorBorderColor = Color.Red
-                    ),
-                    singleLine = true,
-                    isError = formState.locationError != null,
-                    supportingText = { formState.locationError?.let { Text(it, color = Color.Red) } }
-                )
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Precio
-                Text(
-                    text = "Precio",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                OutlinedTextField(
-                    value = formState.price,
-                    onValueChange = viewModel::updatePrice,
-                    placeholder = { Text("Ingresa el precio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedBorderColor = greenColor,
-                        errorBorderColor = Color.Red
-                    ),
-                    singleLine = true,
-                    isError = formState.priceError != null,
-                    supportingText = { formState.priceError?.let { Text(it, color = Color.Red) } }
-                )
+            // Ubicación
+            Text(
+                text = "Ubicación",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            OutlinedTextField(
+                value = formState.location,
+                onValueChange = viewModel::updateLocation,
+                placeholder = { Text("máximo 30 caracteres") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = greenColor,
+                    errorBorderColor = Color.Red
+                ),
+                isError = formState.locationError != null,
+                supportingText = { 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        formState.locationError?.let { Text(it, color = Color.Red) }
+                        Text("${formState.location.length}/30", 
+                            color = if (formState.location.length > 30) Color.Red else Color.Gray)
+                    }
+                }
+            )
 
-                // Sección de imagen
-                Text(
-                    text = "Imagen del producto",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Precio
+            Text(
+                text = "Precio",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            OutlinedTextField(
+                value = formState.price,
+                onValueChange = viewModel::updatePrice,
+                placeholder = { Text("Ejemplo: 99.99") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = greenColor,
+                    errorBorderColor = Color.Red
+                ),
+                isError = formState.priceError != null,
+                supportingText = { formState.priceError?.let { Text(it, color = Color.Red) } }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Imagen
+            Text(
+                text = "Imagen del producto",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 if (formState.imageUri != null) {
-                    Box(
+                    AsyncImage(
+                        model = formState.imageUri,
+                        contentDescription = "Imagen del producto",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    FloatingActionButton(
+                        onClick = { imagePicker.launch("image/*") },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    ) {
-                        AsyncImage(
-                            model = Uri.parse(formState.imageUri),
-                            contentDescription = "Imagen seleccionada",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
-                
-                OutlinedButton(
-                    onClick = { imagePicker.launch("image/*") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = greenColor
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (formState.imageUri == null) Icons.Default.Add else Icons.Default.Edit,
-                        contentDescription = null,
-                        tint = greenColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (formState.imageUri == null) "Subir imagen" else "Elegir otra imagen",
-                        color = greenColor
-                    )
-                }
-
-                if (formState.imageError != null) {
-                    Text(
-                        text = formState.imageError!!,
-                        color = Color.Red,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-
-                // Botón Publicar
-                Button(
-                    onClick = viewModel::createPublication,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
                         containerColor = greenColor
-                    ),
-                    enabled = state !is NewPublicationState.Loading
-                ) {
-                    if (state is NewPublicationState.Loading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Text("Publicar")
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Cambiar imagen")
                     }
+                } else {
+                    IconButton(
+                        onClick = { imagePicker.launch("image/*") },
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Agregar imagen",
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                }
+            }
+            if (formState.imageError != null) {
+                Text(
+                    text = formState.imageError!!,
+                    color = Color.Red,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+
+            // Botón Publicar
+            Button(
+                onClick = { viewModel.createPublication(context, userId) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = greenColor
+                ),
+                enabled = state !is NewPublicationState.Loading
+            ) {
+                if (state is NewPublicationState.Loading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text("Publicar")
                 }
             }
         }
