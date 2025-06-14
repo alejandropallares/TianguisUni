@@ -33,7 +33,8 @@ import android.util.Log
 fun MisPublicacionesScreen(
     viewModel: PublicacionViewModel? = null,
     userId: String? = null,
-    onNavigateToNuevaPublicacion: () -> Unit
+    onNavigateToNuevaPublicacion: () -> Unit,
+    onNavigateToEditarPublicacion: (Publicacion) -> Unit
 ) {
     Log.d("MisPublicacionesScreen", "Renderizando pantalla. ViewModel: ${viewModel != null}, UserId: $userId")
 
@@ -111,7 +112,15 @@ fun MisPublicacionesScreen(
                 ) {
                     items(publicaciones) { publicacion ->
                         Log.d("MisPublicacionesScreen", "Renderizando publicación: ${publicacion.nombre_producto}")
-                        PublicacionCard(publicacion = publicacion)
+                        PublicacionCard(
+                            publicacion = publicacion,
+                            onEditClick = { onNavigateToEditarPublicacion(publicacion) },
+                            onDeleteClick = { 
+                                if (viewModel != null && userId != null) {
+                                    viewModel.eliminarPublicacion(publicacion.uuid, userId)
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -120,7 +129,13 @@ fun MisPublicacionesScreen(
 }
 
 @Composable
-fun PublicacionCard(publicacion: Publicacion) {
+fun PublicacionCard(
+    publicacion: Publicacion,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Log.d("PublicacionCard", "Renderizando card para: ${publicacion.nombre_producto}")
     Card(
         modifier = Modifier
@@ -183,7 +198,7 @@ fun PublicacionCard(publicacion: Publicacion) {
             // Botones de acción
             Column {
                 IconButton(
-                    onClick = { /* TODO: Implementar edición */ }
+                    onClick = onEditClick
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -192,7 +207,7 @@ fun PublicacionCard(publicacion: Publicacion) {
                     )
                 }
                 IconButton(
-                    onClick = { /* TODO: Implementar borrado */ }
+                    onClick = { showDeleteDialog = true }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -202,5 +217,29 @@ fun PublicacionCard(publicacion: Publicacion) {
                 }
             }
         }
+    }
+
+    // Diálogo de confirmación de eliminación
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar publicación") },
+            text = { Text("¿Estás seguro de que deseas eliminar esta publicación?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 } 

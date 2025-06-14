@@ -110,14 +110,35 @@ class PublicacionViewModel(application: Application) : AndroidViewModel(applicat
     fun eliminarPublicacion(uuid: String, userId: String) {
         viewModelScope.launch {
             try {
-                val response = api.deletePublicacion(uuid, userId)
-                if (response.isSuccessful) {
-                    _operationResult.value = Result.success(Unit)
-                    startObservingPublicaciones(userId) // Recargar la lista
+                Log.d("PublicacionViewModel", "Iniciando eliminación lógica de publicación: $uuid")
+                
+                // Obtener la publicación actual de Room
+                val publicacionActual = publicacionDao.getPublicacionById(uuid)
+                if (publicacionActual != null) {
+                    // Crear copia con eliminado_estado = true
+                    val publicacionEliminada = publicacionActual.copy(
+                        eliminado_estado = true,
+                        fecha_modificacion = System.currentTimeMillis()
+                    )
+
+                    // Actualizar en el servidor
+                    val response = api.updatePublicacion(uuid, publicacionEliminada)
+                    if (response.isSuccessful) {
+                        // Actualizar en Room
+                        publicacionDao.insertPublicacion(publicacionEliminada)
+                        Log.d("PublicacionViewModel", "Publicación marcada como eliminada exitosamente")
+                        _operationResult.value = Result.success(Unit)
+                        startObservingPublicaciones(userId) // Recargar la lista
+                    } else {
+                        Log.e("PublicacionViewModel", "Error al marcar como eliminada en el servidor")
+                        _operationResult.value = Result.failure(Exception("Error al eliminar la publicación"))
+                    }
                 } else {
-                    _operationResult.value = Result.failure(Exception("Error al eliminar la publicación"))
+                    Log.e("PublicacionViewModel", "No se encontró la publicación en Room")
+                    _operationResult.value = Result.failure(Exception("Publicación no encontrada"))
                 }
             } catch (e: Exception) {
+                Log.e("PublicacionViewModel", "Error al eliminar publicación", e)
                 _operationResult.value = Result.failure(e)
             }
         }
