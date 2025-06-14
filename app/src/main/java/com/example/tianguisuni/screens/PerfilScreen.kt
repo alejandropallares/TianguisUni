@@ -62,33 +62,33 @@ fun PerfilScreen(
 
     if (isLoggedIn) {
         // Pantalla de perfil del usuario
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
                 .padding(16.dp)
-        ) {
+    ) {
             // Encabezado con título y botón de regresar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* TODO: Implementar navegación hacia atrás */ }) {
-                    Icon(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { /* TODO: Implementar navegación hacia atrás */ }) {
+                Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Regresar",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Text(
-                    text = "Mi cuenta",
-                    style = MaterialTheme.typography.titleLarge
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
-                // Espaciador para mantener el título centrado
-                Spacer(modifier = Modifier.width(48.dp))
             }
+            Text(
+                    text = "Mi cuenta",
+                style = MaterialTheme.typography.titleLarge
+            )
+            // Espaciador para mantener el título centrado
+            Spacer(modifier = Modifier.width(48.dp))
+        }
 
             // Información del usuario
             Column(
@@ -161,47 +161,47 @@ fun PerfilScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-            ) {
-                Text(
-                    text = "Nombre de usuario",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { if (it.length <= 20) username = it },
-                    modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = "Nombre de usuario",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            OutlinedTextField(
+                value = username,
+                onValueChange = { if (it.length <= 20) username = it },
+                modifier = Modifier.fillMaxWidth(),
                     isError = username.isNotEmpty() && !username.matches(Regex("^[a-zA-Z0-9._]{0,20}$")),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = if (username.isNotEmpty() && !username.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))) Color.Red else MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = if (username.isNotEmpty() && !username.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))) Color.Red else MaterialTheme.colorScheme.outline
-                    )
                 )
+            )
 
-                Text(
-                    text = "Contraseña",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
+            Text(
+                text = "Contraseña",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
                                 imageVector = if (passwordVisible) Icons.Default.Close else Icons.Default.Info,
                                 contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
-                            )
+                        )
                         }
                     }
-                )
+            )
 
-                Button(
+            Button(
                     onClick = { 
                         if (username.isEmpty() || password.isEmpty()) {
                             errorMessage = "Por favor ingresa usuario y contraseña"
@@ -224,36 +224,36 @@ fun PerfilScreen(
                         isLoading = true
                         authViewModel.login(username, password)
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
                     enabled = !isLoading && username.isNotEmpty() && password.isNotEmpty()
-                ) {
+            ) {
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("Entrar")
+                Text("Entrar")
                     }
-                }
+            }
 
-                // Texto y enlace de registro
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
+            // Texto y enlace de registro
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
                         text = "¿No tienes cuenta? ",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    TextButton(
-                        onClick = onNavigateToRegister,
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                TextButton(
+                    onClick = onNavigateToRegister,
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                         Text("Regístrate")
                     }
                 }

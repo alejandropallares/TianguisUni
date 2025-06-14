@@ -13,6 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.NewPublicationViewModel
+import com.example.tianguisuni.viewmodel.PublicacionViewModel
+import com.example.tianguisuni.viewmodel.PublicacionViewModelFactory
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,15 +27,20 @@ fun UIPrincipal() {
     val newPublicationViewModel: NewPublicationViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
     
+    val context = LocalContext.current
+    val publicacionViewModel: PublicacionViewModel = viewModel(
+        factory = PublicacionViewModelFactory(context.applicationContext as Application)
+    )
+
     when {
         showNuevaPublicacion -> {
             val currentUserId = authViewModel.getCurrentUserId()
             if (currentUserId != null) {
-                NuevaPublicacionScreen(
-                    viewModel = newPublicationViewModel,
+            NuevaPublicacionScreen(
+                viewModel = newPublicationViewModel,
                     userId = currentUserId,
-                    onClose = { showNuevaPublicacion = false }
-                )
+                onClose = { showNuevaPublicacion = false }
+            )
             } else {
                 showRegistro = true
                 showNuevaPublicacion = false
@@ -90,6 +99,8 @@ fun UIPrincipal() {
                             }
                         )
                         1 -> MisPublicacionesScreen(
+                            viewModel = publicacionViewModel,
+                            userId = authViewModel.getCurrentUserId(),
                             onNavigateToNuevaPublicacion = { 
                                 val currentUserId = authViewModel.getCurrentUserId()
                                 if (currentUserId != null) {

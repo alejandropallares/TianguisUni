@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tianguisuni.data.database.DatabaseProvider
@@ -153,6 +154,7 @@ class NewPublicationViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _state.value = NewPublicationState.Loading
+                Log.d("NewPublicationViewModel", "Creando nueva publicación para usuario: $userId")
                 
                 val formState = _formState.value
                 val imageBase64 = formState.imageUri?.let { 
@@ -173,18 +175,24 @@ class NewPublicationViewModel : ViewModel() {
                     sincronizado = false
                 )
 
+                Log.d("NewPublicationViewModel", "Publicación creada: ${publicacion.uuid}, Nombre: ${publicacion.nombre_producto}")
+
                 // Primero intentamos enviar al servidor
                 val response = api.createPublicacion(publicacion)
                 if (response.isSuccessful) {
+                    Log.d("NewPublicationViewModel", "Publicación guardada en servidor exitosamente")
                     // Si el servidor acepta la publicación, la guardamos localmente
                     databaseProvider?.publicacionDao?.insertPublicacion(publicacion.copy(sincronizado = true))
+                    Log.d("NewPublicationViewModel", "Publicación guardada en Room exitosamente")
                     _state.value = NewPublicationState.Success
                 } else {
+                    Log.e("NewPublicationViewModel", "Error al guardar en servidor, guardando localmente")
                     // Si hay error en el servidor, guardamos localmente pero marcada como no sincronizada
                     databaseProvider?.publicacionDao?.insertPublicacion(publicacion)
                     _state.value = NewPublicationState.Error("Error al crear la publicación en el servidor. Se guardó localmente y se sincronizará más tarde.")
                 }
             } catch (e: Exception) {
+                Log.e("NewPublicationViewModel", "Error al crear publicación", e)
                 // En caso de error de red, guardamos localmente
                 try {
                     val formState = _formState.value
@@ -206,9 +214,11 @@ class NewPublicationViewModel : ViewModel() {
                         sincronizado = false
                     )
                     
+                    Log.d("NewPublicationViewModel", "Guardando publicación localmente después de error")
                     databaseProvider?.publicacionDao?.insertPublicacion(publicacion)
                     _state.value = NewPublicationState.Error("Error de conexión. La publicación se guardó localmente y se sincronizará cuando haya conexión.")
                 } catch (e: Exception) {
+                    Log.e("NewPublicationViewModel", "Error al guardar localmente", e)
                     _state.value = NewPublicationState.Error("Error al crear la publicación: ${e.message}")
                 }
             }
