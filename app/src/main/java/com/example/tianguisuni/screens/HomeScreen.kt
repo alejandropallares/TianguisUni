@@ -32,12 +32,14 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.tianguisuni.data.entities.Publicacion
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
     onNavigateToNuevaPublicacion: () -> Unit,
-    onNavigateToDetalles: (Publicacion) -> Unit
+    onNavigateToDetalles: (Publicacion) -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
     val categories = listOf("Todo", "Comida", "Bebida", "Ropa", "Dulces", "Regalos", "Otros")
     var selectedCategory by remember { mutableStateOf("Todo") }
@@ -123,10 +125,11 @@ fun HomeScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .padding(8.dp)
                             .clickable { onNavigateToDetalles(publicacion) },
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        colors = CardDefaults.cardColors(
+                            containerColor = accentColor
+                        )
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth()

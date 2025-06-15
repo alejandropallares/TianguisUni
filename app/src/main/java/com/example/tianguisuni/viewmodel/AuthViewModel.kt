@@ -24,6 +24,7 @@ class AuthViewModel : ViewModel() {
     val registerResult: LiveData<Result<Unit>> = _registerResult
 
     private var currentUserId: String? = null
+    private var currentUsername: String? = null
 
     fun initialize(context: Context) {
         databaseProvider = DatabaseProvider.getInstance(context)
@@ -50,6 +51,7 @@ class AuthViewModel : ViewModel() {
                 val response = api.register(usuario)
                 if (response.isSuccessful) {
                     currentUserId = userId
+                    currentUsername = nombre
                     _registerResult.value = Result.success(Unit)
                 } else {
                     _registerResult.value = Result.failure(Exception("Error al registrar usuario"))
@@ -66,6 +68,7 @@ class AuthViewModel : ViewModel() {
                 val response = api.login(LoginRequest(username, password))
                 if (response.isSuccessful && response.body() != null) {
                     currentUserId = response.body()?.userId
+                    currentUsername = username
                     _loginResult.value = Result.success(response.body()!!)
                 } else {
                     _loginResult.value = Result.failure(Exception("Error al iniciar sesión"))
@@ -78,7 +81,10 @@ class AuthViewModel : ViewModel() {
 
     fun getCurrentUserId(): String? = currentUserId
 
+    fun getCurrentUsername(): String? = currentUsername
+
     fun logout() {
         currentUserId = null
+        currentUsername = null
     }
 } 

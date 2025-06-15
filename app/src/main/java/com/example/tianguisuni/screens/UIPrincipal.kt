@@ -14,12 +14,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tianguisuni.viewmodel.AuthViewModel
-import com.example.tianguisuni.viewmodel.NewPublicationViewModel
-import com.example.tianguisuni.viewmodel.PublicacionViewModel
-import com.example.tianguisuni.viewmodel.PublicacionViewModelFactory
-import android.app.Application
+import com.example.tianguisuni.viewmodel.*
 import com.example.tianguisuni.data.entities.Publicacion
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +24,7 @@ fun UIPrincipal() {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     var showNuevaPublicacion by rememberSaveable { mutableStateOf(false) }
     var showRegistro by rememberSaveable { mutableStateOf(false) }
+    var showPreferencias by rememberSaveable { mutableStateOf(false) }
     var publicacionToEdit: String? by rememberSaveable { mutableStateOf(null) }
     var selectedPublicacion: Publicacion? by rememberSaveable { mutableStateOf(null) }
     
@@ -34,8 +32,15 @@ fun UIPrincipal() {
     val newPublicationViewModel: NewPublicationViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
     val publicacionViewModel: PublicacionViewModel = viewModel(
-        factory = PublicacionViewModelFactory(context.applicationContext as Application)
+        factory = PublicacionViewModelFactory(context.applicationContext as android.app.Application)
     )
+    val preferenciasViewModel: PreferenciasViewModel = viewModel(
+        factory = PreferenciasViewModelFactory(context)
+    )
+
+    // Collect color preferences
+    val colorPreferences by preferenciasViewModel.colorPreferences.collectAsState(initial = Triple(162, 208, 115))
+    val accentColor = Color(colorPreferences.first, colorPreferences.second, colorPreferences.third)
 
     // Observar las publicaciones para encontrar la que se está editando
     val publicaciones by publicacionViewModel.publicaciones.collectAsState()
@@ -49,28 +54,24 @@ fun UIPrincipal() {
                 publicacion = selectedPublicacion!!,
                 onNavigateBack = { selectedPublicacion = null },
                 onShare = {
-                    val shareIntent = Intent().apply {
+                    val sendIntent = Intent().apply {
                         action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "¡Mira este producto en TianguisUni!\n" +
+                                "Nombre: ${selectedPublicacion!!.nombre_producto}\n" +
+                                "Precio: $${selectedPublicacion!!.precio_producto}\n" +
+                                "Descripción: ${selectedPublicacion!!.descripcion_producto}\n" +
+                                "Ubicación: ${selectedPublicacion!!.ubicacion_producto}\n" +
+                                "Contacto: ${selectedPublicacion!!.nombre_pila}")
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, """
-                            ¡Mira este producto en Tianguis Universitario!
-                            
-                            ${selectedPublicacion!!.nombre_producto}
-                            Precio: $${String.format("%.2f", selectedPublicacion!!.precio_producto)}
-                            Categoría: ${selectedPublicacion!!.categoria_producto}
-                            Ubicación: ${selectedPublicacion!!.ubicacion_producto}
-                            Lo vende: ${selectedPublicacion!!.nombre_pila}
-                            
-                            Descripción: ${selectedPublicacion!!.descripcion_producto}
-                        """.trimIndent())
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Compartir publicación"))
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
                 }
             )
         }
         publicacionEnEdicion != null -> {
             EditarPublicacionScreen(
-                publicacion = publicacionEnEdicion,
+                publicacion = publicacionEnEdicion!!,
                 viewModel = publicacionViewModel,
                 onClose = { publicacionToEdit = null }
             )
@@ -97,6 +98,11 @@ fun UIPrincipal() {
                         showNuevaPublicacion = true
                     }
                 }
+            )
+        }
+        showPreferencias -> {
+            PreferenciasScreen(
+                onNavigateBack = { showPreferencias = false }
             )
         }
         else -> {
@@ -141,7 +147,8 @@ fun UIPrincipal() {
                             },
                             onNavigateToDetalles = { publicacion ->
                                 selectedPublicacion = publicacion
-                            }
+                            },
+                            accentColor = accentColor
                         )
                         1 -> MisPublicacionesScreen(
                             viewModel = publicacionViewModel,
@@ -156,10 +163,12 @@ fun UIPrincipal() {
                             },
                             onNavigateToEditarPublicacion = { publicacion ->
                                 publicacionToEdit = publicacion.uuid
-                            }
+                            },
+                            accentColor = accentColor
                         )
                         2 -> PerfilScreen(
-                            onNavigateToRegister = { showRegistro = true }
+                            onNavigateToRegister = { showRegistro = true },
+                            onNavigateToPreferences = { showPreferencias = true }
                         )
                     }
                 }

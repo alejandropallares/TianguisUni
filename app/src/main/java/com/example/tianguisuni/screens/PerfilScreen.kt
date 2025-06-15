@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import com.example.tianguisuni.viewmodel.AuthViewModelFactory
 @Composable
 fun PerfilScreen(
     onNavigateToRegister: () -> Unit,
+    onNavigateToPreferences: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModelFactory.provideFactory(
@@ -42,8 +44,10 @@ fun PerfilScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var hasShownLoginAlert by remember { mutableStateOf(false) }
     
     val currentUserId = authViewModel.getCurrentUserId()
+    val currentUsername = authViewModel.getCurrentUsername()
     val isLoggedIn = currentUserId != null
     
     val loginResult by authViewModel.loginResult.observeAsState()
@@ -52,12 +56,15 @@ fun PerfilScreen(
     LaunchedEffect(loginResult) {
         loginResult?.let { result ->
             isLoading = false
-            result.onSuccess { response ->
-                errorMessage = "Inicio de sesión exitoso"
-                showErrorDialog = true
-            }.onFailure { exception ->
-                errorMessage = exception.message ?: "Error al iniciar sesión"
-                showErrorDialog = true
+            if (!hasShownLoginAlert) {
+                result.onSuccess { response ->
+                    errorMessage = "Inicio de sesión exitoso"
+                    showErrorDialog = true
+                    hasShownLoginAlert = true
+                }.onFailure { exception ->
+                    errorMessage = exception.message ?: "Error al iniciar sesión"
+                    showErrorDialog = true
+                }
             }
         }
     }
@@ -95,8 +102,13 @@ fun PerfilScreen(
                         text = "Mi cuenta",
                         style = MaterialTheme.typography.titleLarge
                     )
-                    // Espaciador para mantener el título centrado
-                    Spacer(modifier = Modifier.width(48.dp))
+                    IconButton(onClick = onNavigateToPreferences) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Preferencias",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
 
                 // Información del usuario
@@ -111,7 +123,7 @@ fun PerfilScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = username,
+                        text = currentUsername ?: "",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -121,6 +133,7 @@ fun PerfilScreen(
                 TextButton(
                     onClick = {
                         authViewModel.logout()
+                        hasShownLoginAlert = false
                     },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {

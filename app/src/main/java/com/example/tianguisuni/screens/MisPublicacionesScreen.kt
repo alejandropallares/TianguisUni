@@ -34,7 +34,8 @@ fun MisPublicacionesScreen(
     viewModel: PublicacionViewModel? = null,
     userId: String? = null,
     onNavigateToNuevaPublicacion: () -> Unit,
-    onNavigateToEditarPublicacion: (Publicacion) -> Unit
+    onNavigateToEditarPublicacion: (Publicacion) -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Log.d("MisPublicacionesScreen", "Renderizando pantalla. ViewModel: ${viewModel != null}, UserId: $userId")
 
@@ -119,7 +120,8 @@ fun MisPublicacionesScreen(
                                 if (viewModel != null && userId != null) {
                                     viewModel.eliminarPublicacion(publicacion.uuid, userId)
                                 }
-                            }
+                            },
+                            accentColor = accentColor
                         )
                     }
                 }
@@ -132,7 +134,8 @@ fun MisPublicacionesScreen(
 fun PublicacionCard(
     publicacion: Publicacion,
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    accentColor: Color
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -140,9 +143,12 @@ fun PublicacionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(8.dp),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor
+        )
     ) {
         Row(
             modifier = Modifier
