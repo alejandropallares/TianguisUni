@@ -15,6 +15,7 @@ import androidx.room.PrimaryKey
  * @property precio_producto Precio del producto
  * @property imagen_producto Imagen del producto en formato Base64
  * @property user_id ID del usuario que creó la publicación
+ * @property nombre_pila Nombre del usuario que creó la publicación
  * @property fecha_modificacion Timestamp de la última modificación
  * @property eliminado_estado Indica si la publicación está marcada como eliminada
  * @property sincronizado Indica si el registro está sincronizado con el servidor
@@ -38,6 +39,7 @@ data class Publicacion(
     val imagen_producto: String, // Base64
     
     val user_id: String,
+    val nombre_pila: String?, // Nombre del usuario que creó la publicación
     
     // Campos para sincronización
     val fecha_modificacion: Long = System.currentTimeMillis(),

@@ -161,6 +161,9 @@ class NewPublicationViewModel : ViewModel() {
                     convertImageToBase64(context, Uri.parse(it))
                 } ?: throw IllegalStateException("Image URI is null")
 
+                // Obtener el usuario actual para el nombre_pila
+                val usuario = databaseProvider?.usuarioDao?.getUsuarioById(userId)
+
                 val publicacion = Publicacion(
                     uuid = UUID.randomUUID().toString(),
                     nombre_producto = formState.name,
@@ -170,6 +173,7 @@ class NewPublicationViewModel : ViewModel() {
                     precio_producto = formState.price.toDoubleOrNull() ?: 0.0,
                     imagen_producto = imageBase64,
                     user_id = userId,
+                    nombre_pila = usuario?.nombre_pila ?: "Usuario desconocido",
                     fecha_modificacion = System.currentTimeMillis(),
                     eliminado_estado = false,
                     sincronizado = false
@@ -200,6 +204,9 @@ class NewPublicationViewModel : ViewModel() {
                         convertImageToBase64(context, Uri.parse(it))
                     } ?: throw IllegalStateException("Image URI is null")
 
+                    // Obtener el usuario actual para el nombre_pila
+                    val usuario = databaseProvider?.usuarioDao?.getUsuarioById(userId)
+
                     val publicacion = Publicacion(
                         uuid = UUID.randomUUID().toString(),
                         nombre_producto = formState.name,
@@ -209,6 +216,7 @@ class NewPublicationViewModel : ViewModel() {
                         precio_producto = formState.price.toDoubleOrNull() ?: 0.0,
                         imagen_producto = imageBase64,
                         user_id = userId,
+                        nombre_pila = usuario?.nombre_pila ?: "Usuario desconocido",
                         fecha_modificacion = System.currentTimeMillis(),
                         eliminado_estado = false,
                         sincronizado = false

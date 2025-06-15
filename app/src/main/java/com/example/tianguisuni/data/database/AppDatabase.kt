@@ -21,7 +21,7 @@ import com.example.tianguisuni.data.entities.Usuario
         Usuario::class,
         Publicacion::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -73,6 +73,53 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Migración de la versión 2 a la 3
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Crear una nueva tabla con la columna nombre_pila
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS publicaciones_new (
+                        uuid TEXT NOT NULL PRIMARY KEY,
+                        nombre_producto TEXT NOT NULL,
+                        categoria_producto TEXT NOT NULL,
+                        descripcion_producto TEXT NOT NULL,
+                        ubicacion_producto TEXT NOT NULL,
+                        precio_producto REAL NOT NULL,
+                        imagen_producto TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
+                        nombre_pila TEXT,
+                        fecha_modificacion INTEGER NOT NULL,
+                        eliminado_estado INTEGER NOT NULL,
+                        sincronizado INTEGER NOT NULL
+                    )
+                """)
+
+                // Copiar los datos de la tabla antigua a la nueva, usando NULL para nombre_pila
+                db.execSQL("""
+                    INSERT INTO publicaciones_new (
+                        uuid, nombre_producto, categoria_producto, descripcion_producto,
+                        ubicacion_producto, precio_producto, imagen_producto, user_id,
+                        nombre_pila, fecha_modificacion, eliminado_estado, sincronizado
+                    )
+                    SELECT 
+                        uuid, nombre_producto, categoria_producto, descripcion_producto,
+                        ubicacion_producto, precio_producto, imagen_producto, user_id,
+                        NULL, fecha_modificacion, eliminado_estado, sincronizado
+                    FROM publicaciones
+                """)
+
+                // Eliminar la tabla antigua
+                db.execSQL("DROP TABLE publicaciones")
+
+                // Renombrar la nueva tabla
+                db.execSQL("ALTER TABLE publicaciones_new RENAME TO publicaciones")
+
+                // Recrear los índices
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_publicaciones_categoria_producto ON publicaciones(categoria_producto)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_publicaciones_fecha_modificacion ON publicaciones(fecha_modificacion)")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -80,7 +127,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 
                 INSTANCE = instance
