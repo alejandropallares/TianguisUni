@@ -3,6 +3,7 @@ package com.example.tianguisuni.screens
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,11 +26,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.viewmodel.PublicacionesViewModel
 import com.example.tianguisuni.viewmodel.PublicacionesViewModelFactory
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.tianguisuni.data.entities.Publicacion
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
-    onNavigateToNuevaPublicacion: () -> Unit
+    onNavigateToNuevaPublicacion: () -> Unit,
+    onNavigateToDetalles: (Publicacion) -> Unit
 ) {
     val categories = listOf("Todo", "Comida", "Bebida", "Ropa", "Dulces", "Regalos", "Otros")
     var selectedCategory by remember { mutableStateOf("Todo") }
@@ -41,7 +49,14 @@ fun HomeScreen(
     
     val publicaciones by viewModel.publicaciones.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() }
+    )
 
     Column(
         modifier = Modifier
@@ -82,7 +97,7 @@ fun HomeScreen(
         }
 
         // Estado de carga y error
-        if (isLoading) {
+        if (isLoading && publicaciones.isEmpty()) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
@@ -93,89 +108,117 @@ fun HomeScreen(
             )
         }
 
-        // Lista de publicaciones
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        // Lista de publicaciones con pull to refresh
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pullRefresh(pullRefreshState)
         ) {
-            items(publicaciones) { publicacionConUsuario ->
-                val publicacion = publicacionConUsuario.publicacion
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(publicaciones) { publicacionConUsuario ->
+                    val publicacion = publicacionConUsuario.publicacion
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { onNavigateToDetalles(publicacion) },
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        // Imagen del producto
-                        val imageBitmap = remember(publicacion.imagen_producto) {
-                            decodeBase64ToBitmap(publicacion.imagen_producto)
-                        }
-                        
-                        if (imageBitmap != null) {
-                            Image(
-                                bitmap = imageBitmap.asImageBitmap(),
-                                contentDescription = "Imagen de ${publicacion.nombre_producto}",
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // Imagen del producto
+                            val imageBitmap = remember(publicacion.imagen_producto) {
+                                decodeBase64ToBitmap(publicacion.imagen_producto)
+                            }
+                            
+                            if (imageBitmap != null) {
+                                Image(
+                                    bitmap = imageBitmap.asImageBitmap(),
+                                    contentDescription = "Imagen de ${publicacion.nombre_producto}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Error al cargar la imagen")
+                                }
+                            }
+
+                            // Información del producto
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp)
-                                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                                contentAlignment = Alignment.Center
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("Error al cargar la imagen")
+                                // Categoría
+                                Text(
+                                    text = publicacion.categoria_producto,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                // Nombre del producto
+                                Text(
+                                    text = publicacion.nombre_producto,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                // Vendedor
+                                Text(
+                                    text = "De: ${publicacionConUsuario.nombreUsuario}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                // Precio
+                                Text(
+                                    text = "$${String.format("%.2f", publicacion.precio_producto)}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
+                    }
+                }
 
-                        // Información del producto
-                        Column(
+                // Elemento de carga al final de la lista
+                item {
+                    if (isLoading) {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentAlignment = Alignment.Center
                         ) {
-                            // Categoría
-                            Text(
-                                text = publicacion.categoria_producto,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            // Nombre del producto
-                            Text(
-                                text = publicacion.nombre_producto,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            // Vendedor
-                            Text(
-                                text = "De: ${publicacionConUsuario.nombreUsuario}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            // Precio
-                            Text(
-                                text = "$${String.format("%.2f", publicacion.precio_producto)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
+                            CircularProgressIndicator()
                         }
                     }
                 }
             }
+
+            // Pull to refresh indicator
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

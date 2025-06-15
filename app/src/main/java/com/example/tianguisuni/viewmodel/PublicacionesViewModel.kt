@@ -26,6 +26,9 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
@@ -36,6 +39,36 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
 
     init {
         cargarPublicaciones()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            try {
+                _isRefreshing.value = true
+                _error.value = null
+
+                // Obtener publicaciones del servidor
+                val publicacionesServidor = api.getPublicaciones()
+                
+                // Guardar publicaciones en la base de datos local
+                publicacionDao.insertPublicaciones(publicacionesServidor)
+
+                // Crear lista de PublicacionConUsuario usando el nombre_pila de la respuesta
+                val publicacionesConUsuario = publicacionesServidor.map { publicacion ->
+                    PublicacionConUsuario(
+                        publicacion = publicacion,
+                        nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                    )
+                }
+
+                _publicaciones.value = publicacionesConUsuario
+            } catch (e: Exception) {
+                Log.e("PublicacionesViewModel", "Error al recargar publicaciones", e)
+                _error.value = "Error al recargar las publicaciones"
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     private fun cargarPublicaciones() {

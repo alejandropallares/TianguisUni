@@ -1,5 +1,6 @@
 package com.example.tianguisuni.screens
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,13 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.NewPublicationViewModel
 import com.example.tianguisuni.viewmodel.PublicacionViewModel
 import com.example.tianguisuni.viewmodel.PublicacionViewModelFactory
 import android.app.Application
-import androidx.compose.ui.platform.LocalContext
 import com.example.tianguisuni.data.entities.Publicacion
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,13 +27,12 @@ fun UIPrincipal() {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     var showNuevaPublicacion by rememberSaveable { mutableStateOf(false) }
     var showRegistro by rememberSaveable { mutableStateOf(false) }
-    var publicacionToEdit by rememberSaveable { 
-        mutableStateOf<String?>(null) // Guardamos solo el UUID en lugar de toda la publicación
-    }
+    var publicacionToEdit: String? by rememberSaveable { mutableStateOf(null) }
+    var selectedPublicacion: Publicacion? by rememberSaveable { mutableStateOf(null) }
     
+    val context = LocalContext.current
     val newPublicationViewModel: NewPublicationViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
-    val context = LocalContext.current
     val publicacionViewModel: PublicacionViewModel = viewModel(
         factory = PublicacionViewModelFactory(context.applicationContext as Application)
     )
@@ -44,6 +44,30 @@ fun UIPrincipal() {
     }
 
     when {
+        selectedPublicacion != null -> {
+            DetallesPublicacionScreen(
+                publicacion = selectedPublicacion!!,
+                onNavigateBack = { selectedPublicacion = null },
+                onShare = {
+                    val shareIntent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, """
+                            ¡Mira este producto en Tianguis Universitario!
+                            
+                            ${selectedPublicacion!!.nombre_producto}
+                            Precio: $${String.format("%.2f", selectedPublicacion!!.precio_producto)}
+                            Categoría: ${selectedPublicacion!!.categoria_producto}
+                            Ubicación: ${selectedPublicacion!!.ubicacion_producto}
+                            Lo vende: ${selectedPublicacion!!.nombre_pila}
+                            
+                            Descripción: ${selectedPublicacion!!.descripcion_producto}
+                        """.trimIndent())
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Compartir publicación"))
+                }
+            )
+        }
         publicacionEnEdicion != null -> {
             EditarPublicacionScreen(
                 publicacion = publicacionEnEdicion,
@@ -114,6 +138,9 @@ fun UIPrincipal() {
                                 } else {
                                     showRegistro = true
                                 }
+                            },
+                            onNavigateToDetalles = { publicacion ->
+                                selectedPublicacion = publicacion
                             }
                         )
                         1 -> MisPublicacionesScreen(
