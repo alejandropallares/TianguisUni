@@ -24,6 +24,7 @@ import java.util.UUID
 class NewPublicationViewModel : ViewModel() {
     private val api = RetrofitClient.apiService
     private var databaseProvider: DatabaseProvider? = null
+    private var appContext: Context? = null
     
     private val _state = MutableStateFlow<NewPublicationState>(NewPublicationState.Initial)
     val state: StateFlow<NewPublicationState> = _state.asStateFlow()
@@ -33,6 +34,7 @@ class NewPublicationViewModel : ViewModel() {
 
     fun initialize(context: Context) {
         databaseProvider = DatabaseProvider.getInstance(context)
+        appContext = context.applicationContext
     }
 
     fun updateName(name: String) {
@@ -91,10 +93,38 @@ class NewPublicationViewModel : ViewModel() {
     }
 
     fun updateImage(uri: Uri?) {
-        _formState.value = _formState.value.copy(
-            imageUri = uri?.toString(),
-            imageError = null
-        )
+        viewModelScope.launch {
+            if (uri != null) {
+                try {
+                    // Verificar el tamaño antes de actualizar el estado
+                    val inputStream = appContext?.contentResolver?.openInputStream(uri)
+                    val byteArray = inputStream?.readBytes()
+                    
+                    if (byteArray != null && byteArray.size > 20 * 1024) {
+                        _formState.value = _formState.value.copy(
+                            imageUri = null,
+                            imageError = "La imagen excede el límite de 20KB. Por favor, elige una imagen más pequeña."
+                        )
+                    } else {
+                        _formState.value = _formState.value.copy(
+                            imageUri = uri.toString(),
+                            imageError = null
+                        )
+                    }
+                    inputStream?.close()
+                } catch (e: Exception) {
+                    _formState.value = _formState.value.copy(
+                        imageUri = null,
+                        imageError = "Error al procesar la imagen"
+                    )
+                }
+            } else {
+                _formState.value = _formState.value.copy(
+                    imageUri = null,
+                    imageError = null
+                )
+            }
+        }
     }
 
     fun resetForm() {
@@ -141,12 +171,20 @@ class NewPublicationViewModel : ViewModel() {
 
     private suspend fun convertImageToBase64(context: Context, uri: Uri): String {
         val inputStream = context.contentResolver.openInputStream(uri)
-        val bitmap = BitmapFactory.decodeStream(inputStream)
+        val byteArray = inputStream?.readBytes() ?: throw IllegalStateException("No se pudo leer la imagen")
+        
+        // Verificar el tamaño de la imagen (20KB = 20 * 1024 bytes)
+        if (byteArray.size > 20 * 1024) {
+            throw ImageTooLargeException("La imagen excede el límite de 20KB. Por favor, elige una imagen más pequeña.")
+        }
+
+        val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-        val byteArray = outputStream.toByteArray()
-        return Base64.encodeToString(byteArray, Base64.DEFAULT)
+        return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
     }
+
+    class ImageTooLargeException(message: String) : Exception(message)
 
     fun createPublication(context: Context, userId: String) {
         if (!validateForm()) return

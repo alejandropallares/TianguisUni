@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -325,76 +326,98 @@ fun NuevaPublicacionScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Imagen
-                Text(
-                    text = "Imagen del producto",
-                    style = MaterialTheme.typography.bodyMedium,
+            // Imagen del producto
+            Text(
+                text = "Imagen del producto",
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
-                )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(8.dp))
+            )
+            Text(
+                text = "Tamaño máximo: 20KB",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(Color.LightGray)
-                    .padding(16.dp),
+                    .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
-                    ) {
+            ) {
                 if (formState.imageUri != null) {
-                        AsyncImage(
+                    AsyncImage(
                         model = formState.imageUri,
-                        contentDescription = "Imagen del producto",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    FloatingActionButton(
-                    onClick = { imagePicker.launch("image/*") },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp),
-                        containerColor = greenColor
-                ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Cambiar imagen")
-                    }
-                } else {
+                        contentDescription = "Imagen seleccionada",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    // Botón de editar superpuesto
                     IconButton(
                         onClick = { imagePicker.launch("image/*") },
-                        modifier = Modifier.size(64.dp)
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
                     ) {
                         Icon(
-                            Icons.Default.Add,
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Cambiar imagen",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
                             contentDescription = "Agregar imagen",
+                            tint = Color.Gray,
                             modifier = Modifier.size(48.dp)
-                    )
-                }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Agregar imagen",
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
-                if (formState.imageError != null) {
-                    Text(
-                        text = formState.imageError!!,
-                        color = Color.Red,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
+            
+            // Mensaje de error de la imagen
+            if (formState.imageError != null) {
+                Text(
+                    text = formState.imageError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
-                // Botón Publicar
-                Button(
-                onClick = { viewModel.createPublication(context, userId) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = greenColor
-                    ),
-                    enabled = state !is NewPublicationState.Loading
-                ) {
-                    if (state is NewPublicationState.Loading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Text("Publicar")
+            // Botón Publicar
+            Button(
+            onClick = { viewModel.createPublication(context, userId) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = greenColor
+                ),
+                enabled = state !is NewPublicationState.Loading
+            ) {
+                if (state is NewPublicationState.Loading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text("Publicar")
                 }
             }
         }

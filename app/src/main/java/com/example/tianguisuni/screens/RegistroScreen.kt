@@ -43,9 +43,13 @@ fun RegistroScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var showErrorDialog by remember { mutableStateOf(false) }
-    var errorMessages by remember { mutableStateOf(listOf<String>()) }
     var isLoading by remember { mutableStateOf(false) }
+
+    // Estados para los errores de cada campo
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
     val registerResult by authViewModel.registerResult.observeAsState()
 
@@ -56,77 +60,65 @@ fun RegistroScreen(
             result.onSuccess {
                 onRegistroExitoso()
             }.onFailure { exception ->
-                errorMessages = listOf(exception.message ?: "Error al registrar usuario")
-                showErrorDialog = true
+                // Mostrar error en un Snackbar o AlertDialog según sea necesario
             }
         }
     }
 
-    // Validaciones
-    val isUsernameValid = username.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))
-    val isNameValid = name.matches(Regex("^[a-zA-Z]{0,20}$"))
-    val isPasswordValid = password.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).{8,}$"))
-    val doPasswordsMatch = password == confirmPassword
+    // Funciones de validación en tiempo real
+    fun validateUsername(value: String): String? {
+        return when {
+            value.isEmpty() -> "El nombre de usuario no puede estar vacío"
+            !value.matches(Regex("^[a-zA-Z0-9._]{0,20}$")) -> 
+                "El nombre de usuario debe tener máximo 20 caracteres, sin espacios y solo puede contener letras, números, punto y guion bajo"
+            else -> null
+        }
+    }
 
-    fun validateForm(): Boolean {
-        val errors = mutableListOf<String>()
-        
-        if (username.isEmpty()) {
-            errors.add("El nombre de usuario no puede estar vacío")
-        } else if (!isUsernameValid) {
-            errors.add("El nombre de usuario debe tener máximo 20 caracteres, sin espacios y solo puede contener letras, números, punto y guion bajo")
+    fun validateName(value: String): String? {
+        return when {
+            value.isEmpty() -> "El nombre no puede estar vacío"
+            !value.matches(Regex("^[a-zA-Z]{0,20}$")) ->
+                "El nombre debe tener máximo 20 caracteres y solo puede contener letras"
+            else -> null
         }
-        
-        if (name.isEmpty()) {
-            errors.add("El nombre no puede estar vacío")
-        } else if (!isNameValid) {
-            errors.add("El nombre debe tener máximo 20 caracteres y solo puede contener letras")
-        }
-        
-        if (password.isEmpty()) {
-            errors.add("La contraseña no puede estar vacía")
-        } else if (!isPasswordValid) {
-            errors.add("La contraseña debe tener mínimo 8 caracteres, 1 mayúscula y 1 número")
-        }
-        
-        if (confirmPassword.isEmpty() || !doPasswordsMatch) {
-            errors.add("Las contraseñas no coinciden")
-        }
+    }
 
-        errorMessages = errors
-        return errors.isEmpty()
+    fun validatePassword(value: String): String? {
+        return when {
+            value.isEmpty() -> "La contraseña no puede estar vacía"
+            !value.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).{8,}$")) ->
+                "La contraseña debe tener mínimo 8 caracteres, 1 mayúscula y 1 número"
+            else -> null
+        }
+    }
+
+    fun validateConfirmPassword(value: String, password: String): String? {
+        return when {
+            value.isEmpty() -> "Debes confirmar la contraseña"
+            value != password -> "Las contraseñas no coinciden"
+            else -> null
+        }
     }
 
     fun handleRegistro() {
-        if (validateForm()) {
+        val isValid = usernameError == null && 
+                     nameError == null && 
+                     passwordError == null && 
+                     confirmPasswordError == null &&
+                     username.isNotEmpty() &&
+                     name.isNotEmpty() &&
+                     password.isNotEmpty() &&
+                     confirmPassword.isNotEmpty()
+
+        if (isValid) {
             isLoading = true
             authViewModel.register(
                 nombre = username,
                 nombrePila = name,
                 password = password
             )
-        } else {
-            showErrorDialog = true
         }
-    }
-
-    if (showErrorDialog && errorMessages.isNotEmpty()) {
-        AlertDialog(
-            onDismissRequest = { showErrorDialog = false },
-            title = { Text("Errores en el formulario") },
-            text = {
-                Column {
-                    errorMessages.forEach { error ->
-                        Text("• $error")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showErrorDialog = false }) {
-                    Text("Aceptar")
-                }
-            }
-        )
     }
 
     Column(
@@ -182,15 +174,29 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { newValue ->
-                        if (newValue.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))) {
-                            username = newValue
+                        // Solo permitir letras, números, punto y guion bajo
+                        val filteredValue = newValue.filter { char ->
+                            char.isLetterOrDigit() || char == '.' || char == '_'
+                        }
+                        if (filteredValue.length <= 20) {
+                            username = filteredValue
+                            usernameError = validateUsername(filteredValue)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe un nombre de usuario original") },
                     singleLine = true,
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    isError = usernameError != null
                 )
+                if (usernameError != null) {
+                    Text(
+                        text = usernameError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             // Campo de nombre
@@ -203,15 +209,27 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { newValue ->
-                        if (newValue.matches(Regex("^[a-zA-Z]{0,20}$"))) {
-                            name = newValue
+                        // Solo permitir letras
+                        val filteredValue = newValue.filter { it.isLetter() }
+                        if (filteredValue.length <= 20) {
+                            name = filteredValue
+                            nameError = validateName(filteredValue)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe tu nombre de pila") },
                     singleLine = true,
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    isError = nameError != null
                 )
+                if (nameError != null) {
+                    Text(
+                        text = nameError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             // Campo de contraseña
@@ -229,13 +247,21 @@ fun RegistroScreen(
                 )
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = { newValue ->
+                        // Permitir cualquier caracter para la contraseña pero limitar longitud
+                        if (newValue.length <= 50) { // Agregamos un límite razonable
+                            password = newValue
+                            passwordError = validatePassword(newValue)
+                            confirmPasswordError = validateConfirmPassword(confirmPassword, newValue)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Escribe tu contraseña") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
                     enabled = !isLoading,
+                    isError = passwordError != null,
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
@@ -246,6 +272,14 @@ fun RegistroScreen(
                         }
                     }
                 )
+                if (passwordError != null) {
+                    Text(
+                        text = passwordError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             // Campo de confirmar contraseña
@@ -257,13 +291,17 @@ fun RegistroScreen(
                 )
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = { newValue ->
+                        confirmPassword = newValue
+                        confirmPasswordError = validateConfirmPassword(newValue, password)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Confirma tu contraseña") },
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
                     enabled = !isLoading,
+                    isError = confirmPasswordError != null,
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
@@ -274,13 +312,29 @@ fun RegistroScreen(
                         }
                     }
                 )
+                if (confirmPasswordError != null) {
+                    Text(
+                        text = confirmPasswordError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             // Botón de Registrar
             Button(
                 onClick = { handleRegistro() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && 
+                         usernameError == null && 
+                         nameError == null && 
+                         passwordError == null && 
+                         confirmPasswordError == null &&
+                         username.isNotEmpty() &&
+                         name.isNotEmpty() &&
+                         password.isNotEmpty() &&
+                         confirmPassword.isNotEmpty()
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

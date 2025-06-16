@@ -200,20 +200,6 @@ fun HomeScreen(
                         }
                     }
                 }
-
-                // Elemento de carga al final de la lista
-                item {
-                    if (isLoading) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
             }
 
             // Pull to refresh indicator

@@ -83,7 +83,7 @@ fun PerfilScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Encabezado con título y botón de regresar
+                // Encabezado con título y botón de preferencias
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -91,13 +91,8 @@ fun PerfilScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { /* TODO: Implementar navegación hacia atrás */ }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Regresar",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    // Espaciador para mantener el título centrado
+                    Spacer(modifier = Modifier.width(48.dp))
                     Text(
                         text = "Mi cuenta",
                         style = MaterialTheme.typography.titleLarge
