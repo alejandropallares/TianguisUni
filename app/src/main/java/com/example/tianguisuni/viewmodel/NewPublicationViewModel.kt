@@ -38,9 +38,10 @@ class NewPublicationViewModel : ViewModel() {
     }
 
     fun updateName(name: String) {
-        if (name.length <= 30) {
+        val capitalizedName = if (name.isNotEmpty()) name.replaceFirstChar { it.uppercase() } else name
+        if (capitalizedName.length <= 30) {
             _formState.value = _formState.value.copy(
-                name = name,
+                name = capitalizedName,
                 nameError = null
             )
         } else {
@@ -58,9 +59,10 @@ class NewPublicationViewModel : ViewModel() {
     }
 
     fun updateDescription(description: String) {
-        if (description.length <= 200) {
+        val capitalizedDescription = if (description.isNotEmpty()) description.replaceFirstChar { it.uppercase() } else description
+        if (capitalizedDescription.length <= 200) {
             _formState.value = _formState.value.copy(
-                description = description,
+                description = capitalizedDescription,
                 descriptionError = null
             )
         } else {
@@ -71,9 +73,10 @@ class NewPublicationViewModel : ViewModel() {
     }
 
     fun updateLocation(location: String) {
-        if (location.length <= 30) {
+        val capitalizedLocation = if (location.isNotEmpty()) location.replaceFirstChar { it.uppercase() } else location
+        if (capitalizedLocation.length <= 30) {
             _formState.value = _formState.value.copy(
-                location = location,
+                location = capitalizedLocation,
                 locationError = null
             )
         } else {
