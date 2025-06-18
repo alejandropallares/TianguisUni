@@ -25,6 +25,7 @@ fun UIPrincipal() {
     var showNuevaPublicacion by rememberSaveable { mutableStateOf(false) }
     var showRegistro by rememberSaveable { mutableStateOf(false) }
     var showPreferencias by rememberSaveable { mutableStateOf(false) }
+    var showInformacion by rememberSaveable { mutableStateOf(false) }
     var publicacionToEdit: String? by rememberSaveable { mutableStateOf(null) }
     var selectedPublicacion: Publicacion? by rememberSaveable { mutableStateOf(null) }
     
@@ -49,6 +50,11 @@ fun UIPrincipal() {
     }
 
     when {
+        showInformacion -> {
+            InformacionScreen(
+                onNavigateBack = { showInformacion = false }
+            )
+        }
         selectedPublicacion != null -> {
             DetallesPublicacionScreen(
                 publicacion = selectedPublicacion!!,
@@ -147,6 +153,9 @@ fun UIPrincipal() {
                             },
                             onNavigateToDetalles = { publicacion ->
                                 selectedPublicacion = publicacion
+                            },
+                            onNavigateToInformacion = {
+                                showInformacion = true
                             },
                             accentColor = accentColor
                         )

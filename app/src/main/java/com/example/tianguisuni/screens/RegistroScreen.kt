@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.data.entities.Usuario
 import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.AuthViewModelFactory
+import com.example.tianguisuni.viewmodel.RegistroError
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +45,8 @@ fun RegistroScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
     // Estados para los errores de cada campo
     var usernameError by remember { mutableStateOf<String?>(null) }
@@ -51,19 +54,7 @@ fun RegistroScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
-    val registerResult by authViewModel.registerResult.observeAsState()
-
-    // Observar el resultado del registro
-    LaunchedEffect(registerResult) {
-        registerResult?.let { result ->
-            isLoading = false
-            result.onSuccess {
-                onRegistroExitoso()
-            }.onFailure { exception ->
-                // Mostrar error en un Snackbar o AlertDialog según sea necesario
-            }
-        }
-    }
+    val registerResult by authViewModel.registerResult.collectAsState()
 
     // Funciones de validación en tiempo real
     fun validateUsername(value: String): String? {
@@ -248,26 +239,24 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { newValue ->
-                        // Permitir cualquier caracter para la contraseña pero limitar longitud
-                        if (newValue.length <= 50) { // Agregamos un límite razonable
-                            password = newValue
-                            passwordError = validatePassword(newValue)
+                        password = newValue
+                        passwordError = validatePassword(newValue)
+                        if (confirmPassword.isNotEmpty()) {
                             confirmPasswordError = validateConfirmPassword(confirmPassword, newValue)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Escribe tu contraseña") },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    placeholder = { Text("Escribe una contraseña segura") },
                     singleLine = true,
                     enabled = !isLoading,
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     isError = passwordError != null,
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                                tint = MaterialTheme.colorScheme.onSurface
+                                imageVector = if (passwordVisible) Icons.Default.Info else Icons.Default.Info,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
                             )
                         }
                     }
@@ -296,18 +285,17 @@ fun RegistroScreen(
                         confirmPasswordError = validateConfirmPassword(newValue, password)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Confirma tu contraseña") },
-                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    placeholder = { Text("Vuelve a escribir tu contraseña") },
                     singleLine = true,
                     enabled = !isLoading,
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     isError = confirmPasswordError != null,
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = if (confirmPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                                tint = MaterialTheme.colorScheme.onSurface
+                                imageVector = if (confirmPasswordVisible) Icons.Default.Info else Icons.Default.Info,
+                                contentDescription = if (confirmPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña"
                             )
                         }
                     }
@@ -322,19 +310,13 @@ fun RegistroScreen(
                 }
             }
 
-            // Botón de Registrar
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botón de registro
             Button(
                 onClick = { handleRegistro() },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && 
-                         usernameError == null && 
-                         nameError == null && 
-                         passwordError == null && 
-                         confirmPasswordError == null &&
-                         username.isNotEmpty() &&
-                         name.isNotEmpty() &&
-                         password.isNotEmpty() &&
-                         confirmPassword.isNotEmpty()
+                enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -342,9 +324,38 @@ fun RegistroScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Registrar")
+                    Text("Registrarse")
                 }
             }
         }
+    }
+
+    // Observar el resultado del registro
+    LaunchedEffect(registerResult) {
+        registerResult?.let { result ->
+            isLoading = false
+            result.onSuccess {
+                onRegistroExitoso()
+            }.onFailure { exception ->
+                errorMessage = when (exception) {
+                    is RegistroError.UsuarioExistente -> exception.message ?: "Error desconocido"
+                    else -> "Error al registrar usuario"
+                }
+                showErrorDialog = true
+            }
+        }
+    }
+
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            title = { Text("Error de registro") },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { showErrorDialog = false }) {
+                    Text("Aceptar")
+                }
+            }
+        )
     }
 } 

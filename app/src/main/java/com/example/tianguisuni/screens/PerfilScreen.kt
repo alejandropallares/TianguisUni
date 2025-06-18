@@ -20,8 +20,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tianguisuni.viewmodel.AuthViewModel
 import com.example.tianguisuni.viewmodel.AuthViewModelFactory
@@ -45,12 +43,13 @@ fun PerfilScreen(
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var hasShownLoginAlert by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     
     val currentUserId = authViewModel.getCurrentUserId()
     val currentUsername = authViewModel.getCurrentUsername()
     val isLoggedIn = currentUserId != null
     
-    val loginResult by authViewModel.loginResult.observeAsState()
+    val loginResult by authViewModel.loginResult.collectAsState()
 
     // Observar el resultado del login
     LaunchedEffect(loginResult) {
@@ -126,10 +125,7 @@ fun PerfilScreen(
 
                 // Botón de cerrar sesión
                 TextButton(
-                    onClick = {
-                        authViewModel.logout()
-                        hasShownLoginAlert = false
-                    },
+                    onClick = { showLogoutDialog = true },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Text(
@@ -200,32 +196,16 @@ fun PerfilScreen(
                         }
                     )
 
+                    // Botón de inicio de sesión
                     Button(
-                        onClick = { 
-                            if (username.isEmpty() || password.isEmpty()) {
-                                errorMessage = "Por favor ingresa usuario y contraseña"
-                                showErrorDialog = true
-                                return@Button
-                            }
-                            
-                            if (!username.matches(Regex("^[a-zA-Z0-9._]{0,20}$"))) {
-                                errorMessage = "Nombre de usuario inválido"
-                                showErrorDialog = true
-                                return@Button
-                            }
-                            
-                            if (password.length < 8) {
-                                errorMessage = "La contraseña debe tener al menos 8 caracteres"
-                                showErrorDialog = true
-                                return@Button
-                            }
-                            
+                        onClick = {
                             isLoading = true
+                            hasShownLoginAlert = false
                             authViewModel.login(username, password)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp),
+                            .padding(vertical = 16.dp),
                         enabled = !isLoading && username.isNotEmpty() && password.isNotEmpty()
                     ) {
                         if (isLoading) {
@@ -234,27 +214,16 @@ fun PerfilScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         } else {
-                            Text("Entrar")
+                            Text("Iniciar Sesión")
                         }
                     }
 
-                    // Texto y enlace de registro
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.Center
+                    // Enlace para registrarse
+                    TextButton(
+                        onClick = onNavigateToRegister,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "¿No tienes cuenta? ",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        TextButton(
-                            onClick = onNavigateToRegister,
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("Regístrate")
-                        }
+                        Text("¿No tienes cuenta? Regístrate")
                     }
                 }
             }
@@ -266,16 +235,47 @@ fun PerfilScreen(
         AlertDialog(
             onDismissRequest = { 
                 showErrorDialog = false
+                if (errorMessage == "Inicio de sesión exitoso") {
+                    onLoginClick()
+                }
             },
-            title = { Text(if (errorMessage.contains("exitoso")) "Éxito" else "Error") },
+            title = { Text(if (errorMessage == "Inicio de sesión exitoso") "Éxito" else "Error") },
             text = { Text(errorMessage) },
             confirmButton = {
                 TextButton(
                     onClick = { 
                         showErrorDialog = false
+                        if (errorMessage == "Inicio de sesión exitoso") {
+                            onLoginClick()
+                        }
                     }
                 ) {
                     Text("Aceptar")
+                }
+            }
+        )
+    }
+
+    // Diálogo de cerrar sesión
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Cerrar Sesión") },
+            text = { Text("¿Estás seguro que deseas cerrar sesión?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.logout()
+                        hasShownLoginAlert = false
+                        showLogoutDialog = false
+                    }
+                ) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("No")
                 }
             }
         )

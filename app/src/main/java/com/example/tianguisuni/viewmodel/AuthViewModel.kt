@@ -1,8 +1,6 @@
 package com.example.tianguisuni.viewmodel
 
 import android.content.Context
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tianguisuni.data.database.DatabaseProvider
@@ -10,18 +8,27 @@ import com.example.tianguisuni.data.entities.Usuario
 import com.example.tianguisuni.data.network.RetrofitClient
 import com.example.tianguisuni.data.network.models.LoginRequest
 import com.example.tianguisuni.data.network.models.LoginResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+
+sealed class RegistroError : Exception() {
+    object UsuarioExistente : RegistroError() {
+        override val message: String = "El nombre de usuario ya está en uso. Por favor, elige otro nombre de usuario."
+    }
+    class ErrorGenerico(override val message: String) : RegistroError()
+}
 
 class AuthViewModel : ViewModel() {
     private val api = RetrofitClient.apiService
     private var databaseProvider: DatabaseProvider? = null
     
-    private val _loginResult = MutableLiveData<Result<LoginResponse>>()
-    val loginResult: LiveData<Result<LoginResponse>> = _loginResult
+    private val _loginResult = MutableStateFlow<Result<LoginResponse>?>(null)
+    val loginResult: StateFlow<Result<LoginResponse>?> = _loginResult
 
-    private val _registerResult = MutableLiveData<Result<Unit>>()
-    val registerResult: LiveData<Result<Unit>> = _registerResult
+    private val _registerResult = MutableStateFlow<Result<Unit>?>(null)
+    val registerResult: StateFlow<Result<Unit>?> = _registerResult
 
     private var currentUserId: String? = null
     private var currentUsername: String? = null
@@ -33,6 +40,13 @@ class AuthViewModel : ViewModel() {
     fun register(nombre: String, nombrePila: String, password: String) {
         viewModelScope.launch {
             try {
+                // Verificar si el usuario ya existe
+                val existingUser = databaseProvider?.usuarioDao?.getUsuarioByNombre(nombre)
+                if (existingUser != null) {
+                    _registerResult.value = Result.failure(RegistroError.UsuarioExistente)
+                    return@launch
+                }
+
                 val userId = UUID.randomUUID().toString()
                 val usuario = Usuario(
                     id_usr = userId,
@@ -54,10 +68,10 @@ class AuthViewModel : ViewModel() {
                     currentUsername = nombre
                     _registerResult.value = Result.success(Unit)
                 } else {
-                    _registerResult.value = Result.failure(Exception("Error al registrar usuario"))
+                    _registerResult.value = Result.failure(RegistroError.ErrorGenerico("Error al registrar usuario"))
                 }
             } catch (e: Exception) {
-                _registerResult.value = Result.failure(e)
+                _registerResult.value = Result.failure(RegistroError.ErrorGenerico(e.message ?: "Error al registrar usuario"))
             }
         }
     }
