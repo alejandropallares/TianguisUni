@@ -8,7 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,13 +28,22 @@ fun DetallesPublicacionScreen(
     onNavigateBack: () -> Unit,
     onShare: () -> Unit
 ) {
+    val imageBitmap = remember(publicacion.imagen_producto) {
+        try {
+            val imageBytes = Base64.decode(publicacion.imagen_producto, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)?.asImageBitmap()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Publicación") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
                     }
                 }
             )
@@ -47,15 +56,6 @@ fun DetallesPublicacionScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Imagen del producto
-            val imageBitmap = remember(publicacion.imagen_producto) {
-                try {
-                    val imageBytes = Base64.decode(publicacion.imagen_producto ?: "", Base64.DEFAULT)
-                    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)?.asImageBitmap()
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
             if (imageBitmap != null) {
                 Image(
                     bitmap = imageBitmap,

@@ -53,13 +53,15 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
                 // Guardar publicaciones en la base de datos local
                 publicacionDao.insertPublicaciones(publicacionesServidor)
 
-                // Crear lista de PublicacionConUsuario usando el nombre_pila de la respuesta
-                val publicacionesConUsuario = publicacionesServidor.map { publicacion ->
-                    PublicacionConUsuario(
-                        publicacion = publicacion,
-                        nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
-                    )
-                }
+                // Crear lista de PublicacionConUsuario usando el nombre_pila de la respuesta y ordenar por fecha
+                val publicacionesConUsuario = publicacionesServidor
+                    .sortedByDescending { it.fecha_modificacion }
+                    .map { publicacion ->
+                        PublicacionConUsuario(
+                            publicacion = publicacion,
+                            nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                        )
+                    }
 
                 _publicaciones.value = publicacionesConUsuario
             } catch (e: Exception) {
@@ -83,13 +85,15 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
                 // Guardar publicaciones en la base de datos local
                 publicacionDao.insertPublicaciones(publicacionesServidor)
 
-                // Crear lista de PublicacionConUsuario usando el nombre_pila de la respuesta
-                val publicacionesConUsuario = publicacionesServidor.map { publicacion ->
-                    PublicacionConUsuario(
-                        publicacion = publicacion,
-                        nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
-                    )
-                }
+                // Crear lista de PublicacionConUsuario usando el nombre_pila de la respuesta y ordenar por fecha
+                val publicacionesConUsuario = publicacionesServidor
+                    .sortedByDescending { it.fecha_modificacion }
+                    .map { publicacion ->
+                        PublicacionConUsuario(
+                            publicacion = publicacion,
+                            nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                        )
+                    }
 
                 _publicaciones.value = publicacionesConUsuario
             } catch (e: Exception) {
@@ -98,12 +102,14 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
                 
                 // En caso de error, cargar datos locales
                 publicacionDao.getAllPublicaciones().collect { publicacionesLocales ->
-                    val publicacionesConUsuario = publicacionesLocales.map { publicacion ->
-                        PublicacionConUsuario(
-                            publicacion = publicacion,
-                            nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
-                        )
-                    }
+                    val publicacionesConUsuario = publicacionesLocales
+                        .sortedByDescending { it.fecha_modificacion }
+                        .map { publicacion ->
+                            PublicacionConUsuario(
+                                publicacion = publicacion,
+                                nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                            )
+                        }
                     _publicaciones.value = publicacionesConUsuario
                 }
             } finally {
@@ -118,22 +124,26 @@ class PublicacionesViewModel(application: Application) : AndroidViewModel(applic
                 _isLoading.value = true
                 if (categoria == "Todo") {
                     publicacionDao.getAllPublicaciones().collect { publicaciones ->
-                        val publicacionesConUsuario = publicaciones.map { publicacion ->
-                            PublicacionConUsuario(
-                                publicacion = publicacion,
-                                nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
-                            )
-                        }
+                        val publicacionesConUsuario = publicaciones
+                            .sortedByDescending { it.fecha_modificacion }
+                            .map { publicacion ->
+                                PublicacionConUsuario(
+                                    publicacion = publicacion,
+                                    nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                                )
+                            }
                         _publicaciones.value = publicacionesConUsuario
                     }
                 } else {
                     publicacionDao.getPublicacionesByCategoria(categoria).collect { publicaciones ->
-                        val publicacionesConUsuario = publicaciones.map { publicacion ->
-                            PublicacionConUsuario(
-                                publicacion = publicacion,
-                                nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
-                            )
-                        }
+                        val publicacionesConUsuario = publicaciones
+                            .sortedByDescending { it.fecha_modificacion }
+                            .map { publicacion ->
+                                PublicacionConUsuario(
+                                    publicacion = publicacion,
+                                    nombreUsuario = publicacion.nombre_pila ?: "Usuario desconocido"
+                                )
+                            }
                         _publicaciones.value = publicacionesConUsuario
                     }
                 }

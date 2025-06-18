@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp") version "1.9.20-1.0.14"
     id("kotlin-kapt")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -102,4 +103,7 @@ dependencies {
 
     // DataStore dependency
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Parcelize dependency
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0")
 }
