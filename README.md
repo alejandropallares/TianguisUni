@@ -9,9 +9,7 @@ TianguisUniversitario es una app que permite a los alumnos que venden dentro de 
 + [Equipo de trabajo](#equipo-de-trabajo)
 + [Tecnologias](#tecnologias)
 + [Aquitectura](#arquitectura)
-+ [Entidades](#entidades-de-la-base-de-datos)
-+ [Instalacion](#instalacion)
-+ [Licencia](#licencia)
++ [Descargar la app](#)
 
 ## Objetivo
 
