@@ -8,7 +8,6 @@ TianguisUniversitario es una app que permite a los alumnos que venden dentro de 
 + [Justificacion](#justificacion)
 + [Equipo de trabajo](#equipo-de-trabajo)
 + [Tecnologias](#tecnologias)
-+ [Aquitectura](#arquitectura)
 + [Descargar la app](#)
 
 ## Objetivo
@@ -35,7 +34,7 @@ Es por ello que decidimos crear esta app como un medio más eficiente para que l
 + Networking(Retrofit)
 + DataStore
 
-# IMPORTANTE PARA PROBAR LA APP
+# Importante para probar la App
 
 ```bash
 Para probar la aplicacion, descargue el APK y por favor avice por Teams a apallaresh1600@alumno.ipn.mx o al WhatsApp que se encuentra en la guia de usuario para prender el servidor. 
